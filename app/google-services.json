@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "450492269304",
+    "project_id": "teamgame28-97f78",
+    "storage_bucket": "teamgame28-97f78.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:450492269304:android:629a808de3869622daf10d",
+        "android_client_info": {
+          "package_name": "com.example.teamgame28"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYXz11N2YbKaabqVlw6CCSPxjkoMK1yWU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
