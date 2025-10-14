@@ -1,0 +1,76 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Naziv -->
+        <EditText
+            android:id="@+id/inputTitle"
+            android:hint="Naziv zadatka"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Opis -->
+        <EditText
+            android:id="@+id/inputDescription"
+            android:hint="Opis (opciono)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Kategorija -->
+        <Spinner
+            android:id="@+id/spinnerCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Učestalost -->
+        <Spinner
+            android:id="@+id/spinnerFrequency"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Težina -->
+        <Spinner
+            android:id="@+id/spinnerDifficulty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Bitnost -->
+        <Spinner
+            android:id="@+id/spinnerImportance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Datum početka i kraja -->
+        <EditText
+            android:id="@+id/inputStartDate"
+            android:hint="Datum početka (ako se ponavlja)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <EditText
+            android:id="@+id/inputEndDate"
+            android:hint="Datum završetka (ako se ponavlja)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Vreme izvršenja -->
+        <EditText
+            android:id="@+id/inputTime"
+            android:hint="Vreme izvršenja (HH:mm)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Dugme za čuvanje -->
+        <Button
+            android:id="@+id/buttonSaveTask"
+            android:text="Sačuvaj zadatak"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</ScrollView>

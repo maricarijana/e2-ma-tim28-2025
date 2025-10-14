@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@android:color/white">
+
+    <!-- Naziv zadatka -->
+    <TextView
+        android:id="@+id/textViewTaskTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Naziv zadatka"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
+
+    <!-- Kategorija zadatka -->
+    <TextView
+        android:id="@+id/textViewTaskCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Kategorija"
+        android:padding="4dp"
+        android:textColor="@android:color/white"
+        android:background="#808080"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp" />
+
+    <!-- Status -->
+    <TextView
+        android:id="@+id/textViewTaskStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: PENDING"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"
+        android:textColor="@android:color/darker_gray" />
+
+    <!-- Dugme za akciju -->
+    <Button
+        android:id="@+id/buttonTaskAction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mark Done"
+        android:layout_marginTop="8dp" />
+</LinearLayout>
