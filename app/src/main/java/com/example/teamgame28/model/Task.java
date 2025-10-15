@@ -1,6 +1,8 @@
 package com.example.teamgame28.model;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Task implements Serializable {
     private String id;                  // ID zadatka (Firebase/Room)
@@ -30,9 +32,15 @@ public class Task implements Serializable {
     private long lastActionTimestamp;   // kada je poslednji put ažuriran
 
     private Date dueDate;             // krajnji datum za jednokratne zadatke
+    private List<Long> recurringDates;
 
-    public Task(){}
-    public Task(String id, String userId, String title, String description, String categoryId, String categoryName, String categoryColor, String frequency, int interval, String intervalUnit, Date startDate, Date endDate, String time, int difficultyXp, int importanceXp, int totalXp, boolean recurring, String recurringGroupId, TaskStatus status, long creationTimestamp, long lastActionTimestamp, Date dueDate) {
+    private boolean xpCounted; // da li je XP obračunat za ovaj zadatak
+    private String colorHex; // npr. "#FF9800"
+
+    public Task(){
+        this.recurringDates = new ArrayList<>();
+    }
+    public Task(String id, String userId, String title, String description, String categoryId, String categoryName, String categoryColor, String frequency, int interval, String intervalUnit, Date startDate, Date endDate, String time, int difficultyXp, int importanceXp, int totalXp, boolean recurring, String recurringGroupId, TaskStatus status, long creationTimestamp, long lastActionTimestamp, Date dueDate,List<Long> recurringDates, boolean xpCounted, String colorHex) {
         this.id = id;
         this.userId = userId;
         this.title = title;
@@ -55,6 +63,17 @@ public class Task implements Serializable {
         this.creationTimestamp = creationTimestamp;
         this.lastActionTimestamp = lastActionTimestamp;
         this.dueDate = dueDate;
+        this.recurringDates = (recurringDates != null) ? recurringDates : new ArrayList<>();
+        this.xpCounted= xpCounted;
+        this.colorHex= colorHex;
+    }
+
+    public String getColorHex() {
+        return colorHex;
+    }
+
+    public void setColorHex(String colorHex) {
+        this.colorHex = colorHex;
     }
 
     public String getId() {
@@ -67,6 +86,14 @@ public class Task implements Serializable {
 
     public String getUserId() {
         return userId;
+    }
+
+    public boolean isXpCounted() {
+        return xpCounted;
+    }
+
+    public void setXpCounted(boolean xpCounted) {
+        this.xpCounted = xpCounted;
     }
 
     public void setUserId(String userId) {
@@ -232,7 +259,8 @@ public class Task implements Serializable {
     public void setDueDate(Date dueDate) {
         this.dueDate = dueDate;
     }
-
+    public List<Long> getRecurringDates() { return recurringDates; }
+    public void setRecurringDates(List<Long> recurringDates) { this.recurringDates = recurringDates; }
     @Override
     public String toString() {
         return "Task{" +

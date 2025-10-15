@@ -36,7 +36,7 @@ public class TaskViewModel extends AndroidViewModel {
         taskService.updateTask(task);
     }
 
-    public void deleteTask(String taskId) {
-        taskService.deleteTask(taskId);
+    public void deleteTask(Task task) {
+        taskService.deleteTask(task);
     }
 }

@@ -1,24 +1,15 @@
 package com.example.teamgame28;
+import com.example.teamgame28.R;
 
 import android.os.Bundle;
-import android.util.Log;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.teamgame28.fragments.CreateTaskFragment;
+import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
-import com.example.teamgame28.model.Task;
-import com.example.teamgame28.model.TaskCategory;
-import com.example.teamgame28.model.TaskStatus;
-import com.example.teamgame28.repository.TaskCategoryRepository;
-import com.example.teamgame28.repository.TaskRepository;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
-import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,7 +18,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 🔹 Prikaži listu zadataka pri pokretanju
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+        FloatingActionButton fab = findViewById(R.id.fab_add_task);
+
+        // 🔹 Početni ekran — lista zadataka
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
@@ -35,8 +29,32 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
 
-        // 🔹 Na klik FAB-a otvori formu za kreiranje zadatka
-        FloatingActionButton fab = findViewById(R.id.fab_add_task);
+        // 🔹 Navigacija između prikaza
+
+        bottomNavigation.setOnItemSelectedListener(item -> {
+            // Uzimamo ID stavke
+            int itemId = item.getItemId();
+
+            // Koristimo if-else if umesto switch
+            if (itemId == R.id.nav_tasks) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new TaskListFragment())
+                        .commit();
+                return true;
+            } else if (itemId == R.id.nav_calendar) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new TaskCalendarFragment())
+                        .commit();
+                return true;
+            }
+
+            return false;
+        });
+
+
+        // 🔹 FAB otvara formu za kreiranje zadatka
         fab.setOnClickListener(v -> {
             getSupportFragmentManager()
                     .beginTransaction()
@@ -46,3 +64,41 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 }
+
+
+//package com.example.teamgame28;
+//
+//import android.os.Bundle;
+//
+//import androidx.appcompat.app.AppCompatActivity;
+//
+//import com.example.teamgame28.fragments.CreateTaskFragment;
+//import com.example.teamgame28.fragments.TaskCalendarFragment;
+//import com.google.android.material.floatingactionbutton.FloatingActionButton;
+//
+//public class MainActivity extends AppCompatActivity {
+//
+//    @Override
+//    protected void onCreate(Bundle savedInstanceState) {
+//        super.onCreate(savedInstanceState);
+//        setContentView(R.layout.activity_main);
+//
+//        // 🔹 Prikaži kalendar pri pokretanju aplikacije
+//        if (savedInstanceState == null) {
+//            getSupportFragmentManager()
+//                    .beginTransaction()
+//                    .replace(R.id.fragment_container, new TaskCalendarFragment())
+//                    .commit();
+//        }
+//
+//        // 🔹 Na klik FAB-a otvori formu za kreiranje zadatka
+//        FloatingActionButton fab = findViewById(R.id.fab_add_task);
+//        fab.setOnClickListener(v -> {
+//            getSupportFragmentManager()
+//                    .beginTransaction()
+//                    .replace(R.id.fragment_container, new CreateTaskFragment())
+//                    .addToBackStack(null)
+//                    .commit();
+//        });
+//    }
+//}
