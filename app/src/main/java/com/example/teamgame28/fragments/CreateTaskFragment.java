@@ -178,6 +178,16 @@ public class CreateTaskFragment extends Fragment {
                         return;
                     }
 
+                    // 🟡 Dodat uslov: ako je ponavljajući i datum je u prošlosti → zabrani izmenu
+                    if (task.isRecurring() && task.getStartDate() != null &&
+                            task.getStartDate().getTime() < System.currentTimeMillis()) {
+                        Toast.makeText(requireContext(),
+                                "Prošle instance ponavljajućih zadataka se ne mogu menjati.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // ✅ Inače normalan update
                     task.setTitle(inputTitle.getText().toString());
                     task.setDescription(inputDescription.getText().toString());
                     task.setTime(inputTime.getText().toString());
@@ -191,6 +201,7 @@ public class CreateTaskFragment extends Fragment {
                     requireActivity().getSupportFragmentManager().popBackStack();
                 });
     }
+
 
     private Task createTaskFromInputs() {
         Task task = new Task();
