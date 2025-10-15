@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#101010"
+    android:padding="10dp">
+
+    <!-- 🔹 Header za mesec -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp">
+
+        <ImageView
+            android:id="@+id/btnPreviousMonth"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:src="@android:drawable/arrow_up_float"
+            android:tint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/textCurrentMonth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="JANUARY 2025"
+            android:textColor="#FCA103"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium" />
+
+        <ImageView
+            android:id="@+id/btnNextMonth"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_arrow_right"
+            app:tint="@android:color/white"></ImageView>
+
+    </RelativeLayout>
+
+    <!-- 🔹 Dani u nedelji -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingVertical="6dp"
+        android:weightSum="7">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="MON"
+            android:gravity="center"
+            android:textColor="#EEEEEE"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="TUE"
+            android:gravity="center"
+            android:textColor="#EEEEEE"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="WED"
+            android:gravity="center"
+            android:textColor="#EEEEEE"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="THU"
+            android:gravity="center"
+            android:textColor="#EEEEEE"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="FRI"
+            android:gravity="center"
+            android:textColor="#EEEEEE"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SAT"
+            android:gravity="center"
+            android:textColor="#FCA103"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SUN"
+            android:gravity="center"
+            android:textColor="#FCA103"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+
+    <!-- 🔹 Kizitonwose Calendar -->
+    <com.kizitonwose.calendar.view.CalendarView
+        android:id="@+id/calendarView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cv_dayViewResource="@layout/item_day_cell"
+        android:layout_marginBottom="10dp" />
+
+    <!-- 🔹 Lista zadataka za odabrani datum -->
+    <TextView
+        android:id="@+id/textSelectedDateTasks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Zadaci za izabrani datum:"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_marginTop="8dp" />
+
+    <ListView
+        android:id="@+id/listViewTasksForDate"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="6dp"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>

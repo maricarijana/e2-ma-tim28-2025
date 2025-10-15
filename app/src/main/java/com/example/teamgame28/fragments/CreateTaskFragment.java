@@ -6,9 +6,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -23,7 +25,10 @@ import com.example.teamgame28.model.TaskStatus;
 import com.example.teamgame28.viewmodels.TaskViewModel;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class CreateTaskFragment extends Fragment {
@@ -32,6 +37,18 @@ public class CreateTaskFragment extends Fragment {
     private Spinner spinnerCategory, spinnerFrequency, spinnerDifficulty, spinnerImportance;
     private Button buttonSave;
     private TaskViewModel taskViewModel;
+
+    private EditText inputInterval;
+    private Spinner spinnerIntervalUnit;
+    private LinearLayout recurringOptionsLayout;
+    public static CreateTaskFragment newInstance(String taskId) {
+        CreateTaskFragment fragment = new CreateTaskFragment();
+        Bundle args = new Bundle();
+        args.putString("taskId", taskId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
 
     @Nullable
     @Override
@@ -49,6 +66,9 @@ public class CreateTaskFragment extends Fragment {
         spinnerDifficulty = view.findViewById(R.id.spinnerDifficulty);
         spinnerImportance = view.findViewById(R.id.spinnerImportance);
         buttonSave = view.findViewById(R.id.buttonSaveTask);
+        inputInterval = view.findViewById(R.id.inputInterval);
+        spinnerIntervalUnit = view.findViewById(R.id.spinnerIntervalUnit);
+        recurringOptionsLayout = view.findViewById(R.id.recurringOptionsLayout);
 
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
 
@@ -76,6 +96,23 @@ public class CreateTaskFragment extends Fragment {
         spinnerImportance.setAdapter(new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"Normalan (1 XP)", "Važan (3 XP)", "Ekstremno važan (10 XP)", "Specijalan (100 XP)"}));
+
+        spinnerIntervalUnit.setAdapter(new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"Dan", "Nedelja"}));
+
+        // 👇 Prikaz/skrivanje interval polja kad izabereš učestalost
+        spinnerFrequency.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selected = parent.getItemAtPosition(position).toString();
+                recurringOptionsLayout.setVisibility(selected.equals("Ponavljajući") ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
     }
 
     private void setupPickers() {
@@ -112,7 +149,7 @@ public class CreateTaskFragment extends Fragment {
         task.setFrequency(spinnerFrequency.getSelectedItem().toString());
         task.setRecurring(spinnerFrequency.getSelectedItem().toString().equals("Ponavljajući"));
         task.setTime(inputTime.getText().toString());
-        task.setStatus(TaskStatus.PAUSED);
+        task.setStatus(TaskStatus.ACTIVE);
         task.setUserId("12345");
         task.setCreationTimestamp(System.currentTimeMillis());
 
@@ -148,13 +185,56 @@ public class CreateTaskFragment extends Fragment {
         task.setImportanceXp(importanceXp[spinnerImportance.getSelectedItemPosition()]);
         task.calculateTotalXp();
 
-        // ✅ Sačuvaj
+        // 🔁 Ako je zadatak ponavljajući
+        if (task.isRecurring()) {
+            String intervalStr = inputInterval.getText().toString().trim();
+            if (!intervalStr.isEmpty()) {
+                task.setInterval(Integer.parseInt(intervalStr));
+            }
+            task.setIntervalUnit(spinnerIntervalUnit.getSelectedItem().toString());
+
+            // ✅ Generiši sve datume ponavljanja
+            List<Date> recurringDates = generateRecurringDates(
+                    task.getStartDate(),
+                    task.getEndDate(),
+                    task.getInterval(),
+                    task.getIntervalUnit()
+            );
+
+            // ✅ Pretvori u timestamp listu za Firestore
+            List<Long> timestamps = new ArrayList<>();
+            for (Date d : recurringDates) {
+                timestamps.add(d.getTime());
+            }
+            task.setRecurringDates(timestamps);
+        }
+
+        // 💾 Sačuvaj u bazu
         taskViewModel.addTask(task);
         Toast.makeText(requireContext(), "Zadatak uspešno sačuvan!", Toast.LENGTH_SHORT).show();
 
         clearInputs();
         requireActivity().getSupportFragmentManager().popBackStack();
     }
+
+    private List<Date> generateRecurringDates(Date start, Date end, int interval, String unit) {
+        List<Date> dates = new ArrayList<>();
+        if (start == null || end == null || interval <= 0) return dates;
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(start);
+
+        while (!calendar.getTime().after(end)) {
+            dates.add(calendar.getTime());
+            if (unit.equalsIgnoreCase("Dan")) {
+                calendar.add(Calendar.DAY_OF_MONTH, interval);
+            } else if (unit.equalsIgnoreCase("Nedelja")) {
+                calendar.add(Calendar.WEEK_OF_YEAR, interval);
+            }
+        }
+        return dates;
+    }
+
 
     private void clearInputs() {
         inputTitle.setText("");

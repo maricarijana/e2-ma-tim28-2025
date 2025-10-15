@@ -28,7 +28,7 @@ public class TaskService {
         // npr. automatski izračunaj XP ili timestamp
         task.setTotalXp(task.getDifficultyXp() + task.getImportanceXp());
         task.setCreationTimestamp(System.currentTimeMillis());
-        repository.addTask(task);
+        repository.addTaskWithXpLimit(task);
     }
 
     // 🔹 Ažuriraj postojeći task
