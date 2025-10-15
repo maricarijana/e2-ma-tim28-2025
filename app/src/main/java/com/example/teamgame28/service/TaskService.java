@@ -25,11 +25,16 @@ public class TaskService {
 
     // 🔹 Dodaj novi task
     public void addTask(Task task) {
-        // npr. automatski izračunaj XP ili timestamp
         task.setTotalXp(task.getDifficultyXp() + task.getImportanceXp());
         task.setCreationTimestamp(System.currentTimeMillis());
-        repository.addTaskWithXpLimit(task);
+
+        if (task.isRecurring()) {
+            repository.addRecurringTaskInstances(task);
+        } else {
+            repository.addTaskWithXpLimit(task);
+        }
     }
+
 
     // 🔹 Ažuriraj postojeći task
     public void updateTask(Task task) {
@@ -38,9 +43,10 @@ public class TaskService {
     }
 
     // 🔹 Obriši task
-    public void deleteTask(String taskId) {
-        repository.deleteTask(taskId);
+    public void deleteTask(Task task) {
+        repository.deleteTask(task);
     }
+
 
     // 🔹 (opciono) Izračunaj procenat urađenih
     public LiveData<Double> getSuccessRate(String userId) {

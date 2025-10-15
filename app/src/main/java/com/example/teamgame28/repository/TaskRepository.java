@@ -13,6 +13,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class TaskRepository {
@@ -184,13 +185,45 @@ public class TaskRepository {
     }
 
 
-    // ✅ Brisanje zadatka
-    public void deleteTask(String taskId) {
-        db.collection(COLLECTION_NAME)
-                .document(taskId)
-                .delete();
-    }
+    public void deleteTask(Task task) {
+        // 🔹 1. Ne dozvoli brisanje završenih zadataka
+        if (task.getStatus() == TaskStatus.FINISHED) {
+            Log.w("Firestore", "❌ Završen zadatak ne može biti obrisan: " + task.getTitle());
+            return;
+        }
 
+        // 🔹 2. Ako zadatak nije ponavljajući — samo obriši dokument
+        if (!task.isRecurring()) {
+            db.collection(COLLECTION_NAME)
+                    .document(task.getId())
+                    .delete()
+                    .addOnSuccessListener(aVoid ->
+                            Log.d("Firestore", "✅ Zadatak obrisan: " + task.getTitle()))
+                    .addOnFailureListener(e ->
+                            Log.e("Firestore", "❌ Greška pri brisanju zadatka", e));
+            return;
+        }
+
+        // 🔹 3. Ako jeste ponavljajući — obriši sva buduća ponavljanja
+        long now = System.currentTimeMillis();
+
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("recurringGroupId", task.getRecurringGroupId())
+                .get()
+                .addOnSuccessListener(query -> {
+                    for (QueryDocumentSnapshot doc : query) {
+                        Task t = doc.toObject(Task.class);
+                        if (t.getStartDate() != null && t.getStartDate().getTime() >= now) {
+                            db.collection(COLLECTION_NAME)
+                                    .document(t.getId())
+                                    .delete();
+                        }
+                    }
+                    Log.d("Firestore", "✅ Obrisana buduća ponavljanja za grupu: " + task.getRecurringGroupId());
+                })
+                .addOnFailureListener(e ->
+                        Log.e("Firestore", "❌ Greška pri brisanju ponavljajućih zadataka", e));
+    }
     // 🔹 Dohvatanje zadatka po ID-ju
     public LiveData<Task> getTaskById(String taskId) {
         MutableLiveData<Task> liveData = new MutableLiveData<>();
@@ -218,5 +251,73 @@ public class TaskRepository {
                 .addOnFailureListener(e -> Log.e("TaskRepository", "❌ Greška: " + e.getMessage()));
     }
 
+    public void deleteFutureRecurringTasks(Task task) {
+        if (task.getRecurringGroupId() == null) {
+            // Ako zadatak nema groupId (tj. nije deo grupe ponavljanja) — briši samo njega
+            deleteTask(task);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("recurringGroupId", task.getRecurringGroupId())
+                .get()
+                .addOnSuccessListener(query -> {
+                    for (QueryDocumentSnapshot doc : query) {
+                        Task t = doc.toObject(Task.class);
+
+                        // Ako je startDate u budućnosti — obriši
+                        if (t.getStartDate() != null && t.getStartDate().getTime() >= now) {
+                            db.collection(COLLECTION_NAME)
+                                    .document(t.getId())
+                                    .delete();
+                        }
+                    }
+
+                    Log.d("Firestore", "✅ Obrisana buduća ponavljanja za grupu: " + task.getRecurringGroupId());
+                })
+                .addOnFailureListener(e ->
+                        Log.e("Firestore", "❌ Greška pri brisanju ponavljajućih zadataka", e));
+    }
+
+    // 🔁 Dodaj sve instance ponavljajućeg zadatka
+    public void addRecurringTaskInstances(Task baseTask) {
+        if (baseTask.getRecurringDates() == null || baseTask.getRecurringDates().isEmpty()) {
+            addTask(baseTask);
+            return;
+        }
+
+        // Ako nema groupId, generiši novi
+        if (baseTask.getRecurringGroupId() == null || baseTask.getRecurringGroupId().isEmpty()) {
+            baseTask.setRecurringGroupId(java.util.UUID.randomUUID().toString());
+        }
+
+        for (Long timestamp : baseTask.getRecurringDates()) {
+            Task copy = new Task();
+            copy.setUserId(baseTask.getUserId());
+            copy.setTitle(baseTask.getTitle());
+            copy.setDescription(baseTask.getDescription());
+            copy.setCategoryId(baseTask.getCategoryId());
+            copy.setCategoryName(baseTask.getCategoryName());
+            copy.setCategoryColor(baseTask.getCategoryColor());
+            copy.setFrequency(baseTask.getFrequency());
+            copy.setRecurring(true);
+            copy.setRecurringGroupId(baseTask.getRecurringGroupId());
+            copy.setInterval(baseTask.getInterval());
+            copy.setIntervalUnit(baseTask.getIntervalUnit());
+            copy.setStartDate(new Date(timestamp));
+            copy.setEndDate(baseTask.getEndDate());
+            copy.setTime(baseTask.getTime());
+            copy.setStatus(TaskStatus.ACTIVE);
+            copy.setDifficultyXp(baseTask.getDifficultyXp());
+            copy.setImportanceXp(baseTask.getImportanceXp());
+            copy.calculateTotalXp();
+            copy.setCreationTimestamp(System.currentTimeMillis());
+
+            // Sačuvaj svaku instancu posebno
+            addTask(copy);
+        }
+    }
 
 }
