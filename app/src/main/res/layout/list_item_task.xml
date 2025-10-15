@@ -4,7 +4,9 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="12dp"
-    android:background="@android:color/white">
+    android:background="@android:color/white"
+    android:layout_marginBottom="8dp"
+    android:elevation="2dp">
 
     <!-- Naziv zadatka -->
     <TextView
@@ -28,15 +30,82 @@
         android:textSize="14sp"
         android:layout_marginTop="4dp" />
 
+    <!-- 📆 Datum početka i završetka -->
+    <TextView
+        android:id="@+id/textViewTaskDates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Datum: 1.8.2025 - 1.9.2025"
+        android:textSize="13sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginTop="4dp" />
+
+    <!-- 🔁 Interval i jedinica -->
+    <TextView
+        android:id="@+id/textViewTaskInterval"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Interval: 6 dana"
+        android:textSize="13sp"
+        android:textColor="@android:color/darker_gray" />
+
+    <!-- 📅 Datumi ponavljanja -->
+    <TextView
+        android:id="@+id/textViewRecurringDates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📅 Ponavlja se: 1.8., 7.8., 13.8."
+        android:textSize="13sp"
+        android:textColor="@android:color/holo_blue_dark"
+        android:layout_marginTop="2dp"
+        android:visibility="gone" />
+
     <!-- Status -->
     <TextView
         android:id="@+id/textViewTaskStatus"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Status: PENDING"
         android:textSize="14sp"
         android:layout_marginTop="4dp"
         android:textColor="@android:color/darker_gray" />
+
+    <TextView
+        android:id="@+id/textViewTaskDifficulty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Težina: "
+        android:textSize="13sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/textViewTaskImportance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Bitnost: "
+        android:textSize="13sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/textViewTaskXp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ukupna vrednost zadatka: "
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/holo_green_dark"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/textViewXpCounted"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="XP status"
+        android:textSize="13sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginTop="4dp" />
 
     <!-- Dugme za akciju -->
     <Button

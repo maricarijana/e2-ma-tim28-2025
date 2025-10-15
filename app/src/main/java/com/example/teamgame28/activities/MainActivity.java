@@ -8,16 +8,20 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.example.teamgame28.R;
 import com.example.teamgame28.fragments.CreateTaskFragment;
+import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
 import com.example.teamgame28.service.UserService;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import androidx.appcompat.widget.Toolbar;
+
 public class MainActivity extends AppCompatActivity {
+
     private FirebaseAuth auth;
 
     @Override
@@ -25,18 +29,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // 🔹 Toolbar (gornji meni)
         Toolbar toolbar = findViewById(R.id.topAppBar);
         setSupportActionBar(toolbar);
 
+        // 🔹 Firebase autentifikacija
         auth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = auth.getCurrentUser();
 
-        if (currentUser== null) {
+        if (currentUser == null) {
             startActivity(new Intent(this, AuthActivity.class));
             finish();
             return;
         }
-        // 🔹 Prikaži listu zadataka pri pokretanju
+
+        // 🔹 Bottom Navigation
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+        FloatingActionButton fab = findViewById(R.id.fab_add_task);
+
+        // 🔹 Početni prikaz (lista zadataka)
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
@@ -44,8 +55,28 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
 
-        // 🔹 Na klik FAB-a otvori formu za kreiranje zadatka
-        FloatingActionButton fab = findViewById(R.id.fab_add_task);
+        // 🔹 Navigacija između tabova
+        bottomNavigation.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_tasks) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new TaskListFragment())
+                        .commit();
+                return true;
+            } else if (itemId == R.id.nav_calendar) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new TaskCalendarFragment())
+                        .commit();
+                return true;
+            }
+
+            return false;
+        });
+
+        // 🔹 FAB za dodavanje novog zadatka
         fab.setOnClickListener(v -> {
             getSupportFragmentManager()
                     .beginTransaction()
@@ -54,31 +85,29 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         });
     }
+
+    // 🔹 Toolbar meni (Odjavi se)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return true;
     }
 
+    // 🔹 Logout logika
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_logout) {
-            // pozovi UserService koji već koristiš
             UserService userService = new UserService();
             userService.logout();
 
             Toast.makeText(this, "Uspešno ste se odjavili.", Toast.LENGTH_SHORT).show();
 
-            // prebaci korisnika na login ekran
             Intent intent = new Intent(this, AuthActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
-
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
-
-
 }

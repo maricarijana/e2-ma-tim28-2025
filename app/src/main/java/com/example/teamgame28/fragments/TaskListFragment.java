@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -28,6 +29,9 @@ public class TaskListFragment  extends Fragment {
     private TaskAdapter adapter;
     private List<Task> tasks = new ArrayList<>();
     private TaskViewModel viewModel;
+    private Button btnJednokratni, btnPonavljajuci;
+    private List<Task> allTasks = new ArrayList<>();
+
 
     @Nullable
     @Override
@@ -39,20 +43,47 @@ public class TaskListFragment  extends Fragment {
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
 
         adapter = new TaskAdapter(requireContext(), tasks, (task, v) -> {
-            Toast.makeText(requireContext(),
-                    "Kliknuo si na: " + task.getTitle(),
-                    Toast.LENGTH_SHORT).show();
+
+            // 👉 Klik na zadatak otvara TaskDetailFragment
+            TaskDetailFragment fragment = TaskDetailFragment.newInstance(task.getId());
+
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+
         }, viewModel);
 
         listView.setAdapter(adapter);
+        btnJednokratni = view.findViewById(R.id.btnJednokratni);
+        btnPonavljajuci = view.findViewById(R.id.btnPonavljajuci);
 
         // 🔹 Posmatraj podatke iz ViewModel-a
         viewModel.getTasksByUser("12345") // ili loggedUserId
                 .observe(getViewLifecycleOwner(), taskList -> {
                     tasks.clear();
-                    if (taskList != null) tasks.addAll(taskList);
+                    allTasks.clear();
+                    allTasks.addAll(taskList);
                     adapter.setTasks(tasks);
                 });
+
+        btnJednokratni.setOnClickListener(v -> {
+            List<Task> filtered = new ArrayList<>();
+            for (Task t : allTasks) {
+                if (!t.isRecurring()) filtered.add(t);
+            }
+            adapter.setTasks(filtered);
+        });
+
+        btnPonavljajuci.setOnClickListener(v -> {
+            List<Task> filtered = new ArrayList<>();
+            for (Task t : allTasks) {
+                if (t.isRecurring()) filtered.add(t);
+            }
+            adapter.setTasks(filtered);
+        });
+
 
         return view;
     }
