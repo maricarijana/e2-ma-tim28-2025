@@ -5,13 +5,23 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
+    tools:context=".activities.MainActivity">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:title="Team Game 28"
+        app:titleCentered="true"
+        app:titleTextColor="@android:color/white"
+        app:menu="@menu/main_menu"
+        app:layout_scrollFlags="scroll|enterAlways" />
     <!-- Ovdje će ići fragment sa listom zadataka -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize" />
 
     <!-- Dugme za dodavanje zadatka -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
