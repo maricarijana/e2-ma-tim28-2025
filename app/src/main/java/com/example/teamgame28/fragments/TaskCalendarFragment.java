@@ -101,10 +101,15 @@ public class TaskCalendarFragment extends Fragment {
 
   // 🔹 Adapter
   taskAdapter = new TaskAdapter(requireContext(), tasksForDay, (task, v) -> {
-   Toast.makeText(requireContext(),
-           "Kliknuto na: " + task.getTitle(),
-           Toast.LENGTH_SHORT).show();
+   // 👉 Otvori TaskDetailFragment kada se klikne zadatak
+   Fragment detailFragment = TaskDetailFragment.newInstance(task.getId());
+   requireActivity().getSupportFragmentManager()
+           .beginTransaction()
+           .replace(R.id.fragment_container, detailFragment)
+           .addToBackStack(null)
+           .commit();
   }, taskViewModel);
+
   listViewTasks.setAdapter(taskAdapter);
 
   // 🔹 Kalendar - prikaz trenutnog meseca
