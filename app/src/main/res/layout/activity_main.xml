@@ -2,15 +2,37 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".activities.MainActivity">
 
-    <!-- 🔹 Glavni kontejner za fragmente -->
+    <!-- 🔹 Gornji toolbar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/ThemeOverlay.MaterialComponents.ActionBar">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:title="Team Game 28"
+            app:titleCentered="true"
+            app:titleTextColor="@android:color/white"
+            app:menu="@menu/main_menu" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- 🔹 Fragment koji prikazuje sadržaj (lista zadataka, kreiranje itd.) -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="70dp" />
+        android:layout_marginTop="?attr/actionBarSize"
+        android:layout_marginBottom="70dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <!-- 🔹 Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -23,7 +45,7 @@
         app:itemTextColor="@color/white"
         app:backgroundTint="@color/purple_700" />
 
-    <!-- 🔹 Floating Action Button -->
+    <!-- 🔹 FAB dugme -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_task"
         android:layout_width="wrap_content"
