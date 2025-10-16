@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">TeamGame28</string>
+    <string name="navigation_drawer_open">Otvori meni</string>
+    <string name="navigation_drawer_close">Zatvori meni</string>
 </resources>

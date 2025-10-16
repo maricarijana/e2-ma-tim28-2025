@@ -8,8 +8,11 @@ public class User implements Serializable {
     private String password;
     private String username;
     private String avatar;
-    private boolean isActivated;
-    private int totalXp; // 🎯 Ukupan XP korisnika
+    private boolean activated;
+
+    public User() {
+        // Firebase traži prazan konstruktor
+    }
 
     public User(String uid, String email, String username, String password, String avatar) {
         this.uid = uid;
@@ -17,13 +20,10 @@ public class User implements Serializable {
         this.username = username;
         this.password = password;
         this.avatar = avatar;
-        this.isActivated = false; // biće true kad verifikuje email
-        this.totalXp = 0; // Počinje sa 0 XP
+        this.activated = false;
     }
 
-    public User() {
-        this.totalXp = 0;
-    }
+
 
     public String getUid() { return uid; }
     public void setUid(String uid) { this.uid = uid; }
@@ -37,17 +37,9 @@ public class User implements Serializable {
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
-    public String getAvatarName() { return avatar; }
-    public void setAvatarName(String avatarName) { this.avatar = avatar; }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 
-    public boolean isActivated() { return isActivated; }
-    public void setActivated(boolean registered) { this.isActivated = registered; }
-
-    public int getTotalXp() { return totalXp; }
-    public void setTotalXp(int totalXp) { this.totalXp = totalXp; }
-
-    // 🎯 Metoda za dodavanje XP
-    public void addXp(int xp) {
-        this.totalXp += xp;
-    }
+    public boolean isActivated() { return activated; }
+    public void setActivated(boolean activated) { this.activated = activated; }
 }
