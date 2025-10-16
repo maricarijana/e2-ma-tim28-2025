@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#1E1E1E">
+
+    <!-- 🔹 Naslov -->
+    <TextView
+        android:id="@+id/dialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Dodaj Kategoriju"
+        android:textColor="#FCA103"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 🔹 Naziv kategorije -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Naziv kategorije:"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/editCategoryName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="npr. Zdravlje, Škola, Sport..."
+        android:textColorHint="#888888"
+        android:textColor="#FFFFFF"
+        android:background="@android:drawable/edit_text"
+        android:padding="12dp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 🔹 Boja kategorije -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Izaberite boju:"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- 🔹 Paleta boja (horizontalni layout) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <View
+            android:id="@+id/color1"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#4CAF50"
+            android:tag="#4CAF50" />
+
+        <View
+            android:id="@+id/color2"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#2196F3"
+            android:tag="#2196F3" />
+
+        <View
+            android:id="@+id/color3"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#FFEB3B"
+            android:tag="#FFEB3B" />
+
+        <View
+            android:id="@+id/color4"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#9C27B0"
+            android:tag="#9C27B0" />
+
+        <View
+            android:id="@+id/color5"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#FF5722"
+            android:tag="#FF5722" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="20dp">
+
+        <View
+            android:id="@+id/color6"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#FF9800"
+            android:tag="#FF9800" />
+
+        <View
+            android:id="@+id/color7"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#00BCD4"
+            android:tag="#00BCD4" />
+
+        <View
+            android:id="@+id/color8"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#E91E63"
+            android:tag="#E91E63" />
+
+        <View
+            android:id="@+id/color9"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#795548"
+            android:tag="#795548" />
+
+        <View
+            android:id="@+id/color10"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            android:background="#607D8B"
+            android:tag="#607D8B" />
+    </LinearLayout>
+
+    <!-- 🔹 Prikaz izabrane boje -->
+    <TextView
+        android:id="@+id/textSelectedColor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Izabrana boja: Nijedna"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- 🔹 Dugmad -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Otkaži"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#555555"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sačuvaj"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#FCA103" />
+    </LinearLayout>
+
+</LinearLayout>

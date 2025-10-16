@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#101010"
+    android:padding="16dp">
+
+    <!-- 🔹 Header -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Upravljanje Kategorijama"
+        android:textColor="#FCA103"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 🔹 Opis -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ovde možete kreirati, menjati i brisati kategorije za vaše zadatke. Svaka kategorija ima naziv i boju."
+        android:textColor="#CCCCCC"
+        android:textSize="14sp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 🔹 Dugme za dodavanje nove kategorije -->
+    <Button
+        android:id="@+id/btnAddCategory"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="+ Dodaj Novu Kategoriju"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#FCA103"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 🔹 RecyclerView za prikaz kategorija -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewCategories"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    <!-- 🔹 Poruka ako nema kategorija -->
+    <TextView
+        android:id="@+id/textNoCategories"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nemate ni jednu kategoriju. Kliknite na dugme iznad da dodate prvu."
+        android:textColor="#888888"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="32dp" />
+
+</LinearLayout>

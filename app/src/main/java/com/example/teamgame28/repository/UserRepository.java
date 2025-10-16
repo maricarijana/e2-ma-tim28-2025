@@ -11,7 +11,10 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Transaction;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -246,6 +249,35 @@ public class UserRepository {
                 .collection(PROFILE_SUBCOLLECTION)
                 .document(userId)
                 .update(profilePayload);
+    }
+
+    public void addXpToUser(String userId, int xpToAdd) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final DocumentReference profileRef = db.collection("app_users")
+                .document(userId)
+                .collection("profile")
+                .document(userId);
+
+        db.runTransaction((Transaction.Function<Void>) transaction -> {
+            DocumentSnapshot snapshot = transaction.get(profileRef);
+
+            if (!snapshot.exists()) {
+                throw new FirebaseFirestoreException("Profil ne postoji!",
+                        FirebaseFirestoreException.Code.ABORTED);
+            }
+
+            long currentXp = snapshot.getLong("xp") != null ? snapshot.getLong("xp") : 0;
+            long newXp = currentXp + xpToAdd;
+
+            transaction.update(profileRef, "xp", newXp);
+
+            // Transakcija mora da vrati null
+            return null;
+        }).addOnSuccessListener(aVoid ->
+                Log.d("XP_SYSTEM", "✅ Transakcija za XP uspešna za korisnika " + userId)
+        ).addOnFailureListener(e ->
+                Log.e("XP_SYSTEM", "❌ Greška u transakciji za XP: ", e)
+        );
     }
 
 }
