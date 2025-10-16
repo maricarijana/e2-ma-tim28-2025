@@ -85,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
                         .beginTransaction()
                         .replace(R.id.fragment_container, new CategoryManagementFragment())
                         .commit();
+            } else if (itemId == R.id.nav_boss_battle) {
+                startBossBattle();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()
                         .beginTransaction()
@@ -149,6 +151,18 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Greška pri učitavanju korisnika", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    // 🔹 Pokreni Boss Battle
+    private void startBossBattle() {
+        Intent intent = new Intent(this, BattleActivity.class);
+
+        // Hardcoded vrednosti za testiranje
+        intent.putExtra("BOSS_LEVEL", 1);
+        intent.putExtra("PLAYER_PP", 50);
+        intent.putExtra("SUCCESS_RATE", 67.0);
+
+        startActivity(intent);
     }
 
     // 🔹 Logout funkcija

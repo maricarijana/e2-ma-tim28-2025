@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:padding="24dp">
+
+    <!-- Victory/Result Title -->
+    <TextView
+        android:id="@+id/resultTitleText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:gravity="center"
+        android:text="VICTORY!"
+        android:textColor="#FFD700"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Result Message -->
+    <TextView
+        android:id="@+id/resultMessageText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="You have defeated the boss!"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/resultTitleText" />
+
+    <!-- Chest Container -->
+    <FrameLayout
+        android:id="@+id/chestContainer"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/resultMessageText">
+
+        <!-- Closed Chest Image -->
+        <ImageView
+            android:id="@+id/chestClosedImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/chest_closed"
+            android:contentDescription="Closed chest"
+            android:visibility="visible" />
+
+        <!-- Open Chest Image -->
+        <ImageView
+            android:id="@+id/chestOpenImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/chest_open"
+            android:contentDescription="Open chest"
+            android:visibility="gone" />
+
+        <!-- Lottie Animation for Chest Opening -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/chestOpenAnimation"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false" />
+
+        <!-- Confetti Animation -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/confettiAnimation"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false" />
+    </FrameLayout>
+
+    <!-- Shake Instruction -->
+    <TextView
+        android:id="@+id/shakeInstructionText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="Shake your phone to open the chest!"
+        android:textColor="#00FF88"
+        android:textSize="16sp"
+        android:textStyle="italic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chestContainer" />
+
+    <!-- Rewards Container -->
+    <LinearLayout
+        android:id="@+id/rewardsContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/shakeInstructionText">
+
+        <!-- Coins Reward -->
+        <LinearLayout
+            android:id="@+id/coinsRewardLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/coin_icon"
+                android:contentDescription="Coins" />
+
+            <TextView
+                android:id="@+id/coinsRewardText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="200 Coins"
+                android:textColor="#FFD700"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Equipment Reward -->
+        <LinearLayout
+            android:id="@+id/equipmentRewardLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/equipmentRewardImage"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/gear_icon"
+                android:contentDescription="Equipment" />
+
+            <TextView
+                android:id="@+id/equipmentRewardText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="New Weapon!"
+                android:textColor="#FF6B35"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Continue Button -->
+    <Button
+        android:id="@+id/continueButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"
+        android:backgroundTint="#4CAF50"
+        android:text="CONTINUE"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

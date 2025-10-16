@@ -13,12 +13,12 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-
 import com.example.teamgame28.R;
 import com.example.teamgame28.adapters.TaskAdapter;
 import com.example.teamgame28.model.Task;
 import com.example.teamgame28.repository.TaskRepository;
 import com.example.teamgame28.viewmodels.TaskViewModel;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
@@ -32,6 +32,7 @@ public class TaskListFragment  extends Fragment {
     private TaskViewModel viewModel;
     private Button btnJednokratni, btnPonavljajuci;
     private List<Task> allTasks = new ArrayList<>();
+    private FloatingActionButton fabAddTask;
 
 
     @Nullable
@@ -59,6 +60,7 @@ public class TaskListFragment  extends Fragment {
         listView.setAdapter(adapter);
         btnJednokratni = view.findViewById(R.id.btnJednokratni);
         btnPonavljajuci = view.findViewById(R.id.btnPonavljajuci);
+        fabAddTask = view.findViewById(R.id.fabAddTask);
 
         // 🔹 Posmatraj podatke iz ViewModel-a
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
@@ -114,6 +116,14 @@ public class TaskListFragment  extends Fragment {
             }
         });
 
+        // 🔹 FAB onClick - otvara CreateTaskFragment
+        fabAddTask.setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new CreateTaskFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
 
         return view;
     }

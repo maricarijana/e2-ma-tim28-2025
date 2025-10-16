@@ -12,6 +12,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Transaction;
@@ -278,6 +279,47 @@ public class UserRepository {
         ).addOnFailureListener(e ->
                 Log.e("XP_SYSTEM", "❌ Greška u transakciji za XP: ", e)
         );
+
+
+
     }
+    public void addCoinsToUser(String userId, int coinsToAdd) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        DocumentReference profileRef = db
+                .collection("app_users")
+                .document(userId)
+                .collection("profile")
+                .document(userId);
+
+        profileRef.update("coins", FieldValue.increment(coinsToAdd))
+                .addOnSuccessListener(aVoid ->
+                        Log.d("UserRepo", "✅ Coins added successfully to profile"))
+                .addOnFailureListener(e ->
+                        Log.e("UserRepo", "❌ Failed to add coins", e));
+    }
+
+    public void addEquipmentToUser(String userId, String newEquipment) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Ako oprema još nije implementirana, možeš hardcodovati
+        if (newEquipment == null || newEquipment.isEmpty()) {
+            newEquipment = "Basic Armor"; // ili "Wooden Sword"
+        }
+
+        DocumentReference profileRef = db
+                .collection("app_users")
+                .document(userId)
+                .collection("profile")
+                .document(userId);
+
+        profileRef.update("equipment", FieldValue.arrayUnion(newEquipment))
+                .addOnSuccessListener(aVoid ->
+                        Log.d("UserRepo", "✅ Equipment added successfully"))
+                .addOnFailureListener(e ->
+                        Log.e("UserRepo", "❌ Failed to add equipment", e));
+    }
+
+
 
 }

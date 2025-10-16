@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:padding="16dp">
+
+    <!-- Boss Illustration -->
+    <ImageView
+        android:id="@+id/bossImageView"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_marginTop="24dp"
+        android:src="@drawable/boss_idle"
+        android:contentDescription="Boss illustration"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Boss HP Bar -->
+    <TextView
+        android:id="@+id/bossHPLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Boss HP"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bossImageView" />
+
+    <ProgressBar
+        android:id="@+id/bossHPBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="30dp"
+        android:layout_marginTop="8dp"
+        android:max="100"
+        android:progress="100"
+        android:progressTint="#FF4444"
+        android:progressBackgroundTint="#333333"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bossHPLabel" />
+
+    <TextView
+        android:id="@+id/bossHPText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="200 / 200"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="@id/bossHPBar"
+        app:layout_constraintStart_toStartOf="@id/bossHPBar"
+        app:layout_constraintTop_toTopOf="@id/bossHPBar"
+        app:layout_constraintBottom_toBottomOf="@id/bossHPBar" />
+
+    <!-- Player PP Bar -->
+    <TextView
+        android:id="@+id/playerPPLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Your Power (PP)"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bossHPBar" />
+
+    <ProgressBar
+        android:id="@+id/playerPPBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="30dp"
+        android:layout_marginTop="8dp"
+        android:max="100"
+        android:progress="50"
+        android:progressTint="#4444FF"
+        android:progressBackgroundTint="#333333"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/playerPPLabel" />
+
+    <TextView
+        android:id="@+id/playerPPText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="50 PP"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="@id/playerPPBar"
+        app:layout_constraintStart_toStartOf="@id/playerPPBar"
+        app:layout_constraintTop_toTopOf="@id/playerPPBar"
+        app:layout_constraintBottom_toBottomOf="@id/playerPPBar" />
+
+    <!-- Active Equipment -->
+    <TextView
+        android:id="@+id/equipmentLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Active Equipment"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/playerPPBar" />
+
+    <LinearLayout
+        android:id="@+id/equipmentContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/equipmentLabel">
+
+        <TextView
+            android:id="@+id/equipmentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="None equipped"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Success Rate Info -->
+    <TextView
+        android:id="@+id/successRateText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Attack Success Rate: 67%"
+        android:textColor="#FFD700"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/equipmentContainer" />
+
+    <!-- Attack Counter -->
+    <TextView
+        android:id="@+id/attackCounterText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Attacks Remaining: 5 / 5"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/successRateText" />
+
+    <!-- Battle Message -->
+    <TextView
+        android:id="@+id/battleMessageText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Shake your phone to attack!"
+        android:textColor="#00FF88"
+        android:textSize="16sp"
+        android:textStyle="italic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/attackCounterText" />
+
+    <!-- Attack Button -->
+    <Button
+        android:id="@+id/attackButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="#FF6B35"
+        android:text="ATTACK"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/battleMessageText" />
+
+    <!-- Lottie Animation for Boss Hit -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/bossHitAnimation"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/bossImageView"
+        app:layout_constraintEnd_toEndOf="@id/bossImageView"
+        app:layout_constraintStart_toStartOf="@id/bossImageView"
+        app:layout_constraintTop_toTopOf="@id/bossImageView"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
