@@ -59,12 +59,12 @@ public class UserProfile implements Serializable {
     public List<String> getEquipment() { return equipment; }
     public void setEquipment(List<String> equipment) { this.equipment = equipment; }
 
-    // Logika levelovanja
-    public void addXp(int amount) {
-        this.xp += amount;
-        checkLevelUp();
-    }
 
+    public void addXp(int xpToAdd) {
+        this.xp += xpToAdd;
+        checkLevelUp();
+        // Ovde kasnije možete dodati i logiku za level up
+    }
     public void addCoins(int amount) {
         this.coins += amount;
     }
@@ -97,4 +97,6 @@ public class UserProfile implements Serializable {
         else if (level >= 5) this.title = "Učenik";
         else this.title = "Početnik";
     }
+
+
 }
