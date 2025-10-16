@@ -18,7 +18,10 @@ import com.example.teamgame28.R;
 import com.example.teamgame28.adapters.TaskAdapter;
 import com.example.teamgame28.calendar.DayViewContainer;
 import com.example.teamgame28.model.Task;
+import com.example.teamgame28.model.TaskCategory;
+import com.example.teamgame28.viewmodels.CategoryViewModel;
 import com.example.teamgame28.viewmodels.TaskViewModel;
+import com.google.firebase.auth.FirebaseAuth;
 import com.kizitonwose.calendar.view.CalendarView;
 
 import java.text.SimpleDateFormat;
@@ -42,8 +45,11 @@ public class TaskCalendarFragment extends Fragment {
  private ListView listViewTasks;
 
  private TaskViewModel taskViewModel;
+ private CategoryViewModel categoryViewModel;
  private TaskAdapter taskAdapter;
  private final List<Task> tasksForDay = new ArrayList<>();
+ private List<Task> allTasks = new ArrayList<>();
+ private List<TaskCategory> allCategories = new ArrayList<>();
 
  private Date selectedDate = new Date(); // današnji datum
 
@@ -87,6 +93,10 @@ public class TaskCalendarFragment extends Fragment {
     } else {
      container.textView.setBackgroundColor(Color.TRANSPARENT);
     }
+
+    // 🎨 Prikaz boja kategorija za ovaj dan
+    List<String> colorsForDay = getColorsForDate(day.getDate());
+    container.setColorIndicators(colorsForDay);
    }
   });
 
@@ -98,6 +108,17 @@ public class TaskCalendarFragment extends Fragment {
 
   // 🔹 ViewModel
   taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
+  categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
+
+  // 🔹 Učitaj kategorije
+  String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
+          ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+          : "12345";
+
+  categoryViewModel.getCategoriesByUser(currentUserId).observe(getViewLifecycleOwner(), categories -> {
+   allCategories = categories != null ? categories : new ArrayList<>();
+   calendarView.notifyCalendarChanged();
+  });
 
   // 🔹 Adapter
   taskAdapter = new TaskAdapter(requireContext(), tasksForDay, (task, v) -> {
@@ -130,7 +151,7 @@ public class TaskCalendarFragment extends Fragment {
 
   // 🔹 Zadaci za današnji dan
   updateDateHeader(selectedDate);
-  observeTasksForUser("12345");
+  observeTasksForUser(currentUserId);
  }
 
  private void setupCalendar() {
@@ -173,26 +194,63 @@ public class TaskCalendarFragment extends Fragment {
  }
 
  private void observeTasksForUser(String userId) {
-  taskViewModel.getTasksByUser(userId).observe(getViewLifecycleOwner(), allTasks -> {
+  taskViewModel.getTasksByUser(userId).observe(getViewLifecycleOwner(), tasks -> {
+   allTasks = tasks != null ? tasks : new ArrayList<>();
    tasksForDay.clear();
 
-   if (allTasks != null) {
-    for (Task t : allTasks) {
-     if (t.getStartDate() != null && isSameDay(t.getStartDate(), selectedDate)) {
-      tasksForDay.add(t);
+   for (Task t : allTasks) {
+    if (t.getStartDate() != null && isSameDay(t.getStartDate(), selectedDate)) {
+     tasksForDay.add(t);
+    } else if (t.isRecurring() && t.getRecurringDates() != null) {
+     for (Long ts : t.getRecurringDates()) {
+      Date recurringDate = new Date(ts);
+      if (isSameDay(recurringDate, selectedDate)) {
+       tasksForDay.add(t);
+       break;
+      }
      }
     }
    }
+
+   taskAdapter.setTasks(tasksForDay);
+   calendarView.notifyCalendarChanged();
 
    if (tasksForDay.isEmpty()) {
     Toast.makeText(requireContext(),
             "Nema zadataka za ovaj dan.",
             Toast.LENGTH_SHORT).show();
    }
-
-   taskAdapter.setTasks(tasksForDay);
   });
  }
+
+ private void updateTaskListForSelectedDate() {
+  String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+          ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+          : "12345";
+
+  taskViewModel.getTasksByUser(userId).observe(getViewLifecycleOwner(), tasks -> {
+   allTasks = tasks != null ? tasks : new ArrayList<>();
+   tasksForDay.clear();
+
+   for (Task t : allTasks) {
+    if (t.getStartDate() != null && isSameDay(t.getStartDate(), selectedDate)) {
+     tasksForDay.add(t);
+    } else if (t.isRecurring() && t.getRecurringDates() != null) {
+     for (Long ts : t.getRecurringDates()) {
+      Date recurringDate = new Date(ts);
+      if (isSameDay(recurringDate, selectedDate)) {
+       tasksForDay.add(t);
+       break;
+      }
+     }
+    }
+   }
+
+   taskAdapter.setTasks(tasksForDay);
+   calendarView.notifyCalendarChanged();
+  });
+ }
+
 
  private void updateDateHeader(Date date) {
   SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
@@ -209,20 +267,39 @@ public class TaskCalendarFragment extends Fragment {
           && c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR);
  }
 
- private void updateTaskListForSelectedDate() {
-  taskViewModel.getTasksByUser("12345").observe(getViewLifecycleOwner(), allTasks -> {
-   tasksForDay.clear();
 
-   if (allTasks != null) {
-    for (Task t : allTasks) {
-     if (t.getStartDate() != null && isSameDay(t.getStartDate(), selectedDate)) {
-      tasksForDay.add(t);
+ /**
+  * Vraća listu boja kategorija za zadatke na određeni datum
+  * @param localDate Datum za koji se traže boje
+  * @return Lista hex string boja
+  */
+ private List<String> getColorsForDate(java.time.LocalDate localDate) {
+  List<String> colors = new ArrayList<>();
+
+  // Konvertuj LocalDate u Date za poređenje
+  Date date = Date.from(localDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+
+  // Pronađi sve zadatke za ovaj dan
+  for (Task task : allTasks) {
+   if (task.getStartDate() != null && isSameDay(task.getStartDate(), date)) {
+    // Pronađi kategoriju ovog zadatka
+    String categoryId = task.getCategoryId();
+    if (categoryId != null) {
+     for (TaskCategory category : allCategories) {
+      if (category.getId() != null && category.getId().equals(categoryId)) {
+       String color = category.getColor();
+       // Dodaj boju samo ako već nije u listi (izbjegni duplikate)
+       if (color != null && !colors.contains(color)) {
+        colors.add(color);
+       }
+       break;
+      }
      }
     }
    }
+  }
 
-   taskAdapter.setTasks(tasksForDay);
-  });
+  return colors;
  }
 
 }

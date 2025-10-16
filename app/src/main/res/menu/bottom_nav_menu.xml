@@ -9,4 +9,9 @@
         android:id="@+id/nav_calendar"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Kalendar" />
+
+    <item
+        android:id="@+id/nav_categories"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="Kategorije" />
 </menu>

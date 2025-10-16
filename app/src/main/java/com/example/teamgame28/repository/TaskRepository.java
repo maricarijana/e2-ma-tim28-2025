@@ -187,7 +187,7 @@ public class TaskRepository {
 
     public void deleteTask(Task task) {
         // 🔹 1. Ne dozvoli brisanje završenih zadataka
-        if (task.getStatus() == TaskStatus.FINISHED) {
+        if (task.getStatus() == TaskStatus.FINISHED || task.getStatus() == TaskStatus.CANCELLED) {
             Log.w("Firestore", "❌ Završen zadatak ne može biti obrisan: " + task.getTitle());
             return;
         }
@@ -246,10 +246,47 @@ public class TaskRepository {
     public void updateTaskStatus(String taskId, TaskStatus newStatus) {
         db.collection(COLLECTION_NAME)
                 .document(taskId)
-                .update("status", newStatus, "lastActionTimestamp", System.currentTimeMillis())
-                .addOnSuccessListener(aVoid -> Log.d("TaskRepository", "✅ Status ažuriran: " + newStatus))
-                .addOnFailureListener(e -> Log.e("TaskRepository", "❌ Greška: " + e.getMessage()));
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        Task task = snapshot.toObject(Task.class);
+                        if (task == null) return;
+
+                        task.setStatus(newStatus);
+                        task.setLastActionTimestamp(System.currentTimeMillis());
+
+                        // 🔹 1️⃣ XP se ne obračunava za pauzirane i otkazane zadatke
+                        if (newStatus == TaskStatus.PAUSED || newStatus == TaskStatus.CANCELLED) {
+                            task.setXpCounted(false);
+                            task.setTotalXp(0);
+                        }
+
+                        // 🔹 2️⃣ Ako je zadatak označen kao urađen
+                        else if (newStatus == TaskStatus.FINISHED) {
+                            task.setXpCounted(true);
+
+                            // ➕ XP se dodaje korisniku u Firestore
+                            UserRepository userRepository = new UserRepository();
+                            userRepository.addXpToUser(task.getUserId(), task.getTotalXp());
+
+                            Log.d("XP_SYSTEM", "✅ Korisnik " + task.getUserId() +
+                                    " je dobio " + task.getTotalXp() + " XP za zadatak " + task.getTitle());
+                        }
+
+                        // 🔹 3️⃣ Ažuriraj u bazi
+                        db.collection(COLLECTION_NAME)
+                                .document(taskId)
+                                .set(task)
+                                .addOnSuccessListener(aVoid ->
+                                        Log.d("TaskRepository", "✅ Status ažuriran: " + newStatus))
+                                .addOnFailureListener(e ->
+                                        Log.e("TaskRepository", "❌ Greška pri ažuriranju statusa", e));
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Log.e("TaskRepository", "❌ Greška pri preuzimanju zadatka", e));
     }
+
 
     public void deleteFutureRecurringTasks(Task task) {
         if (task.getRecurringGroupId() == null) {

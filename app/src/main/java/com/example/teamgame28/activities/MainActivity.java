@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.teamgame28.R;
+import com.example.teamgame28.fragments.CategoryManagementFragment;
 import com.example.teamgame28.fragments.CreateTaskFragment;
 import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
@@ -69,6 +70,12 @@ public class MainActivity extends AppCompatActivity {
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new TaskCalendarFragment())
+                        .commit();
+                return true;
+            } else if (itemId == R.id.nav_categories) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new CategoryManagementFragment())
                         .commit();
                 return true;
             }

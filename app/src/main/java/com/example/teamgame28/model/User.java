@@ -9,6 +9,7 @@ public class User implements Serializable {
     private String username;
     private String avatar;
     private boolean isActivated;
+    private int totalXp; // 🎯 Ukupan XP korisnika
 
     public User(String uid, String email, String username, String password, String avatar) {
         this.uid = uid;
@@ -17,9 +18,12 @@ public class User implements Serializable {
         this.password = password;
         this.avatar = avatar;
         this.isActivated = false; // biće true kad verifikuje email
+        this.totalXp = 0; // Počinje sa 0 XP
     }
 
-    public User() {}
+    public User() {
+        this.totalXp = 0;
+    }
 
     public String getUid() { return uid; }
     public void setUid(String uid) { this.uid = uid; }
@@ -38,4 +42,12 @@ public class User implements Serializable {
 
     public boolean isActivated() { return isActivated; }
     public void setActivated(boolean registered) { this.isActivated = registered; }
+
+    public int getTotalXp() { return totalXp; }
+    public void setTotalXp(int totalXp) { this.totalXp = totalXp; }
+
+    // 🎯 Metoda za dodavanje XP
+    public void addXp(int xp) {
+        this.totalXp += xp;
+    }
 }

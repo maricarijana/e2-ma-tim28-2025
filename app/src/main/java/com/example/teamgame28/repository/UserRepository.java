@@ -54,6 +54,7 @@ public class UserRepository {
         payload.put("username", user.getUsername());
         payload.put("avatar", user.getAvatarName());
         payload.put("isActivated", false);
+        payload.put("totalXp", 0); // Početni XP = 0
         payload.put("createdAt", new Date());
 
         firestore.collection(USERS_COLLECTION)
@@ -100,6 +101,43 @@ public class UserRepository {
     public void signOut() {
         auth.signOut();
         Log.d(TAG, "User signed out");
+    }
+
+    /**
+     * 🎯 Dodaje XP korisniku u Firestore
+     * @param userId UID korisnika
+     * @param xpToAdd Količina XP koju treba dodati
+     */
+    public void addXpToUser(String userId, int xpToAdd) {
+        if (userId == null || userId.isEmpty()) {
+            Log.w(TAG, "addXpToUser: userId is null or empty");
+            return;
+        }
+
+        firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Dohvati trenutni XP (ako postoji, inače 0)
+                        Long currentXp = documentSnapshot.getLong("totalXp");
+                        int newXp = (currentXp != null ? currentXp.intValue() : 0) + xpToAdd;
+
+                        // Ažuriraj XP u Firestore
+                        firestore.collection(USERS_COLLECTION)
+                                .document(userId)
+                                .update("totalXp", newXp)
+                                .addOnSuccessListener(aVoid ->
+                                        Log.d(TAG, "✅ Dodato " + xpToAdd + " XP korisniku " + userId +
+                                                ". Novi total: " + newXp))
+                                .addOnFailureListener(e ->
+                                        Log.e(TAG, "❌ Greška pri ažuriranju XP", e));
+                    } else {
+                        Log.w(TAG, "Korisnik sa UID " + userId + " ne postoji u Firestore");
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "❌ Greška pri čitanju korisnika", e));
     }
 
 }

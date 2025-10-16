@@ -19,6 +19,7 @@ import com.example.teamgame28.adapters.TaskAdapter;
 import com.example.teamgame28.model.Task;
 import com.example.teamgame28.repository.TaskRepository;
 import com.example.teamgame28.viewmodels.TaskViewModel;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,11 +61,32 @@ public class TaskListFragment  extends Fragment {
         btnPonavljajuci = view.findViewById(R.id.btnPonavljajuci);
 
         // 🔹 Posmatraj podatke iz ViewModel-a
-        viewModel.getTasksByUser("12345") // ili loggedUserId
+        String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : "12345";
+
+        viewModel.getTasksByUser(currentUserId)
                 .observe(getViewLifecycleOwner(), taskList -> {
                     tasks.clear();
                     allTasks.clear();
-                    allTasks.addAll(taskList);
+
+                    if (taskList != null) {
+                        long now = System.currentTimeMillis();
+
+                        for (Task t : taskList) {
+                            // 🔹 Uzimamo samo zadatke koji još traju ili su u budućnosti
+                            if (t.getStartDate() != null && t.getStartDate().getTime() + 86400000 >= now) {
+                                allTasks.add(t);
+                            }
+                            // Ako zadatak nema startDate, ali ima dueDate — koristi to
+                            else if (t.getDueDate() != null && t.getDueDate().getTime() >= now) {
+                                allTasks.add(t);
+                            }
+                        }
+
+                        tasks.addAll(allTasks);
+                    }
+
                     adapter.setTasks(tasks);
                 });
 
@@ -74,6 +96,10 @@ public class TaskListFragment  extends Fragment {
                 if (!t.isRecurring()) filtered.add(t);
             }
             adapter.setTasks(filtered);
+
+            if (filtered.isEmpty()) {
+                Toast.makeText(requireContext(), "Nema jednokratnih zadataka.", Toast.LENGTH_SHORT).show();
+            }
         });
 
         btnPonavljajuci.setOnClickListener(v -> {
@@ -82,6 +108,10 @@ public class TaskListFragment  extends Fragment {
                 if (t.isRecurring()) filtered.add(t);
             }
             adapter.setTasks(filtered);
+
+            if (filtered.isEmpty()) {
+                Toast.makeText(requireContext(), "Nema ponavljajućih zadataka.", Toast.LENGTH_SHORT).show();
+            }
         });
 
 
