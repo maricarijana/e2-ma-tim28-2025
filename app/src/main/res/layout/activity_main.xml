@@ -37,31 +37,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginTop="?attr/actionBarSize"
-            android:layout_marginBottom="70dp"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <!-- 🔹 Bottom Navigation -->
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            app:menu="@menu/bottom_nav_menu"
-            app:itemIconTint="@color/white"
-            app:itemTextColor="@color/white"
-            app:backgroundTint="@color/purple_700" />
 
-        <!-- 🔹 FAB dugme -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_add_task"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_marginBottom="80dp"
-            android:layout_marginEnd="20dp"
-            android:src="@android:drawable/ic_input_add"
-            app:backgroundTint="@color/purple_500"
-            app:tint="@android:color/white" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
