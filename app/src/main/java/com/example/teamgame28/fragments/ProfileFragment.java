@@ -39,6 +39,7 @@ public class ProfileFragment extends Fragment {
     private TextView profileEquipment;
     private ImageView profileQrCode;
     private Button btnChangePassword;
+    private Button btnViewStats;
     private LinearLayout privateDataContainer;
 
     private UserRepository userRepository;
@@ -63,6 +64,7 @@ public class ProfileFragment extends Fragment {
         profileEquipment = view.findViewById(R.id.profile_equipment);
         profileQrCode = view.findViewById(R.id.profile_qr_code);
         btnChangePassword = view.findViewById(R.id.btn_change_password);
+        btnViewStats = view.findViewById(R.id.btn_view_stats);
         privateDataContainer = view.findViewById(R.id.private_data_container);
 
         // Firebase i Repository
@@ -84,6 +86,16 @@ public class ProfileFragment extends Fragment {
 
             loadUserProfile(viewingUserId);
         }
+
+        // Dugme za statistiku
+        btnViewStats.setOnClickListener(v -> {
+            StatsFragment statsFragment = new StatsFragment();
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, statsFragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
 
         // Dugme za promenu lozinke
         btnChangePassword.setOnClickListener(v -> {
@@ -155,6 +167,7 @@ public class ProfileFragment extends Fragment {
         if (isOwnProfile) {
             privateDataContainer.setVisibility(View.VISIBLE);
             btnChangePassword.setVisibility(View.VISIBLE);
+            btnViewStats.setVisibility(View.VISIBLE);
 
             profilePowerPoints.setText(userProfile.getPowerPoints() + " PP");
             profileCoins.setText(String.valueOf(userProfile.getCoins()));
@@ -184,6 +197,7 @@ public class ProfileFragment extends Fragment {
             // Ako gledamo tuđi profil, sakrij privatne podatke
             privateDataContainer.setVisibility(View.GONE);
             btnChangePassword.setVisibility(View.GONE);
+            btnViewStats.setVisibility(View.GONE);
         }
 
         // QR kod (javno vidljiv)

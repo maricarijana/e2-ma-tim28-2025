@@ -60,6 +60,10 @@ public class UserService {
         userRepository.authLogin(email, password)
                 .addOnSuccessListener(authResult -> {
                     if (authResult.getUser() != null && authResult.getUser().isEmailVerified()) {
+                        // Ažuriraj login streak nakon uspešnog logovanja
+                        String userId = authResult.getUser().getUid();
+                        userRepository.updateLoginStreak(userId);
+
                         tcs.setResult("Uspešno prijavljivanje!");
                     } else {
                         tcs.setException(new Exception("Email nije verifikovan. Proverite poštu."));

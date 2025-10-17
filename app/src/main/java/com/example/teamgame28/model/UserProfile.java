@@ -2,7 +2,9 @@ package com.example.teamgame28.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class UserProfile implements Serializable {
 
@@ -19,6 +21,11 @@ public class UserProfile implements Serializable {
     private List<String> badges;
     private List<String> equipment;
 
+    // Statistika
+    private int activeDays; // Broj dana aktivnog korišćenja (streak)
+    private long lastLoginTime; // Poslednji login timestamp
+    private Map<String, Integer> xpHistory; // XP po danima (key: datum u formatu "yyyy-MM-dd", value: XP)
+
     public UserProfile() {
         this.level = 1;
         this.title = "Početnik";
@@ -29,6 +36,9 @@ public class UserProfile implements Serializable {
         this.equipment = new ArrayList<>();
         this.currentEquipment = "";
         this.qrCode = "";
+        this.activeDays = 0;
+        this.lastLoginTime = 0;
+        this.xpHistory = new HashMap<>();
     }
 
     // Getteri i setteri
@@ -59,6 +69,14 @@ public class UserProfile implements Serializable {
     public List<String> getEquipment() { return equipment; }
     public void setEquipment(List<String> equipment) { this.equipment = equipment; }
 
+    public int getActiveDays() { return activeDays; }
+    public void setActiveDays(int activeDays) { this.activeDays = activeDays; }
+
+    public long getLastLoginTime() { return lastLoginTime; }
+    public void setLastLoginTime(long lastLoginTime) { this.lastLoginTime = lastLoginTime; }
+
+    public Map<String, Integer> getXpHistory() { return xpHistory; }
+    public void setXpHistory(Map<String, Integer> xpHistory) { this.xpHistory = xpHistory; }
 
     public void addXp(int xpToAdd) {
         this.xp += xpToAdd;
