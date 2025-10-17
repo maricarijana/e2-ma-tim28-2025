@@ -285,12 +285,24 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Dugme za level progress -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_view_level_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Napredovanje kroz nivoe"
+            android:textSize="16sp"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_menu_sort_by_size"
+            app:iconGravity="start" />
+
         <!-- Dugme za statistiku -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_view_stats"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
             android:text="Moja statistika"
             android:textSize="16sp"
             app:cornerRadius="8dp"

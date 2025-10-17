@@ -21,6 +21,14 @@ public class TaskRepository {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private static final String COLLECTION_NAME = "tasks";
+
+    // Callback za XP dodelu (poziva ga TaskService)
+    public interface OnTaskFinishedListener {
+        void onTaskFinished(String userId, int xpAmount);
+    }
+
+    private OnTaskFinishedListener taskFinishedListener;
+
     // ✅ Singleton (da možeš zvati getInstance)
     private TaskRepository(Context context) { }
 
@@ -29,6 +37,10 @@ public class TaskRepository {
             instance = new TaskRepository(context.getApplicationContext());
         }
         return instance;
+    }
+
+    public void setOnTaskFinishedListener(OnTaskFinishedListener listener) {
+        this.taskFinishedListener = listener;
     }
 
     // ✅ Dohvatanje svih zadataka (za TaskListFragment)
@@ -265,12 +277,13 @@ public class TaskRepository {
                         else if (newStatus == TaskStatus.FINISHED) {
                             task.setXpCounted(true);
 
-                            // ➕ XP se dodaje korisniku u Firestore
-                            UserRepository userRepository = new UserRepository();
-                            userRepository.addXpToUser(task.getUserId(), task.getTotalXp());
+                            // ➕ Obavesti TaskService da dodeli XP kroz callback
+                            if (taskFinishedListener != null) {
+                                taskFinishedListener.onTaskFinished(task.getUserId(), task.getTotalXp());
+                            }
 
-                            Log.d("XP_SYSTEM", "✅ Korisnik " + task.getUserId() +
-                                    " je dobio " + task.getTotalXp() + " XP za zadatak " + task.getTitle());
+                            Log.d("XP_SYSTEM", "✅ Task završen: " + task.getTitle() +
+                                    " — " + task.getTotalXp() + " XP za korisnika " + task.getUserId());
                         }
 
                         // 🔹 3️⃣ Ažuriraj u bazi

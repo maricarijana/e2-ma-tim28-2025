@@ -25,6 +25,8 @@ import com.example.teamgame28.model.Task;
 import com.example.teamgame28.model.TaskCategory;
 import com.example.teamgame28.model.TaskStatus;
 import com.example.teamgame28.repository.TaskRepository;
+import com.example.teamgame28.repository.UserRepository;
+import com.example.teamgame28.service.LevelingService;
 import com.example.teamgame28.viewmodels.CategoryViewModel;
 import com.example.teamgame28.viewmodels.TaskViewModel;
 import com.google.firebase.auth.FirebaseAuth;
@@ -58,6 +60,7 @@ public class CreateTaskFragment extends Fragment {
     private String taskId = null;
     private List<TaskCategory> allCategories = new ArrayList<>();
     private Map<String, TaskCategory> categoryMap = new HashMap<>(); // Za brzo pronalaženje po imenu
+    private int userLevel = 0; // Trenutni nivo korisnika
 
     public static CreateTaskFragment newInstance(String taskId) {
         CreateTaskFragment fragment = new CreateTaskFragment();
@@ -83,8 +86,8 @@ public class CreateTaskFragment extends Fragment {
         // Load categories from Firestore
         loadCategories();
 
-        // Setup spinners
-        setupSpinners();
+        // Load user level and setup spinners
+        loadUserLevelAndSetupSpinners();
 
         // Setup date/time pickers
         setupPickers();
@@ -160,21 +163,42 @@ public class CreateTaskFragment extends Fragment {
         });
     }
 
+    private void loadUserLevelAndSetupSpinners() {
+        String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : "12345";
+
+        UserRepository userRepository = new UserRepository();
+        userRepository.getUserProfileById(currentUserId, new UserRepository.UserProfileCallback() {
+            @Override
+            public void onSuccess(com.example.teamgame28.model.UserProfile userProfile) {
+                userLevel = userProfile.getLevel();
+                setupSpinners();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                userLevel = 0; // Fallback na level 0
+                setupSpinners();
+            }
+        });
+    }
+
     private void setupSpinners() {
         // Frequency spinner
         spinnerFrequency.setAdapter(new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"Jednokratni", "Ponavljajući"}));
 
-        // Difficulty spinner
+        // Difficulty spinner - dinamički na osnovu user levela
         spinnerDifficulty.setAdapter(new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"Veoma lak (1 XP)", "Lak (3 XP)", "Težak (7 XP)", "Ekstremno težak (20 XP)"}));
+                LevelingService.getDifficultyLabels(userLevel)));
 
-        // Importance spinner
+        // Importance spinner - dinamički na osnovu user levela
         spinnerImportance.setAdapter(new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"Normalan (1 XP)", "Važan (3 XP)", "Ekstremno važan (10 XP)", "Specijalan (100 XP)"}));
+                LevelingService.getImportanceLabels(userLevel)));
 
         // Interval unit spinner
         spinnerIntervalUnit.setAdapter(new ArrayAdapter<>(requireContext(),
@@ -430,24 +454,26 @@ public class CreateTaskFragment extends Fragment {
     }
 
     private int getSelectedDifficultyXp() {
-        int[] difficultyXp = {1, 3, 7, 20};
-        return difficultyXp[spinnerDifficulty.getSelectedItemPosition()];
+        return LevelingService.getDifficultyXpForLevel(spinnerDifficulty.getSelectedItemPosition(), userLevel);
     }
 
     private int getSelectedImportanceXp() {
-        int[] importanceXp = {1, 3, 10, 100};
-        return importanceXp[spinnerImportance.getSelectedItemPosition()];
+        return LevelingService.getImportanceXpForLevel(spinnerImportance.getSelectedItemPosition(), userLevel);
     }
 
     private int getDifficultyIndex(int value) {
-        int[] options = {1, 3, 7, 20};
-        for (int i = 0; i < options.length; i++) if (options[i] == value) return i;
+        // Pronađi indeks za zadatu XP vrednost na trenutnom levelu
+        for (int i = 0; i < 4; i++) {
+            if (LevelingService.getDifficultyXpForLevel(i, userLevel) == value) return i;
+        }
         return 0;
     }
 
     private int getImportanceIndex(int value) {
-        int[] options = {1, 3, 10, 100};
-        for (int i = 0; i < options.length; i++) if (options[i] == value) return i;
+        // Pronađi indeks za zadatu XP vrednost na trenutnom levelu
+        for (int i = 0; i < 4; i++) {
+            if (LevelingService.getImportanceXpForLevel(i, userLevel) == value) return i;
+        }
         return 0;
     }
 
