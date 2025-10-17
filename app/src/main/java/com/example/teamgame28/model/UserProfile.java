@@ -2,14 +2,16 @@ package com.example.teamgame28.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class UserProfile implements Serializable {
 
     // Javno vidljivi podaci
     private int level;
     private String title;
-    private int xp;
+    private int xp; // Ukupan XP ikad sakupljen
     private String qrCode;
     private String currentEquipment;
 
@@ -19,8 +21,13 @@ public class UserProfile implements Serializable {
     private List<String> badges;
     private List<String> equipment;
 
+    // Statistika
+    private int activeDays; // Broj dana aktivnog korišćenja (streak)
+    private long lastLoginTime; // Poslednji login timestamp
+    private Map<String, Integer> xpHistory; // XP po danima (key: datum u formatu "yyyy-MM-dd", value: XP)
+
     public UserProfile() {
-        this.level = 1;
+        this.level = 0; // Počinje od 0, prvi level se dostiže sa 200 XP
         this.title = "Početnik";
         this.xp = 0;
         this.powerPoints = 0;
@@ -29,6 +36,9 @@ public class UserProfile implements Serializable {
         this.equipment = new ArrayList<>();
         this.currentEquipment = "";
         this.qrCode = "";
+        this.activeDays = 0;
+        this.lastLoginTime = 0;
+        this.xpHistory = new HashMap<>();
     }
 
     // Getteri i setteri
@@ -59,12 +69,15 @@ public class UserProfile implements Serializable {
     public List<String> getEquipment() { return equipment; }
     public void setEquipment(List<String> equipment) { this.equipment = equipment; }
 
+    public int getActiveDays() { return activeDays; }
+    public void setActiveDays(int activeDays) { this.activeDays = activeDays; }
 
-    public void addXp(int xpToAdd) {
-        this.xp += xpToAdd;
-        checkLevelUp();
-        // Ovde kasnije možete dodati i logiku za level up
-    }
+    public long getLastLoginTime() { return lastLoginTime; }
+    public void setLastLoginTime(long lastLoginTime) { this.lastLoginTime = lastLoginTime; }
+
+    public Map<String, Integer> getXpHistory() { return xpHistory; }
+    public void setXpHistory(Map<String, Integer> xpHistory) { this.xpHistory = xpHistory; }
+
     public void addCoins(int amount) {
         this.coins += amount;
     }
@@ -81,21 +94,30 @@ public class UserProfile implements Serializable {
         }
     }
 
-    private void checkLevelUp() {
-        int requiredXp = level * 100;
-        if (xp >= requiredXp) {
-            level++;
-            updateTitle();
+    /**
+     * Helper metoda za određivanje titule na osnovu nivoa.
+     * Svaki nivo ima svoju jedinstvenu titulu.
+     * Poziva se iz UserRepository nakon level up-a.
+     */
+    public void updateTitle() {
+        switch (level) {
+            case 0:
+                this.title = "Početnik";
+                break;
+            case 1:
+                this.title = "Učenik";
+                break;
+            case 2:
+                this.title = "Borac";
+                break;
+            case 3:
+                this.title = "Ratnik";
+                break;
+            default:
+                // Za nivoe iznad 3, koristimo generičku titulu
+                this.title = "Ratnik Nivo " + level;
+                break;
         }
-    }
-
-    private void updateTitle() {
-        if (level >= 50) this.title = "Legenda";
-        else if (level >= 30) this.title = "Majstor";
-        else if (level >= 20) this.title = "Ekspert";
-        else if (level >= 10) this.title = "Ratnik";
-        else if (level >= 5) this.title = "Učenik";
-        else this.title = "Početnik";
     }
 
 

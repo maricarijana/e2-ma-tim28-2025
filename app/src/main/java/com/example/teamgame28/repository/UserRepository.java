@@ -75,6 +75,9 @@ public class UserRepository {
         profilePayload.put("coins", userProfile.getCoins());
         profilePayload.put("badges", userProfile.getBadges());
         profilePayload.put("equipment", userProfile.getEquipment());
+        profilePayload.put("activeDays", userProfile.getActiveDays());
+        profilePayload.put("lastLoginTime", userProfile.getLastLoginTime());
+        profilePayload.put("xpHistory", userProfile.getXpHistory());
 
         // Prvo snimi osnovne User podatke
         firestore.collection(USERS_COLLECTION)
@@ -190,6 +193,9 @@ public class UserRepository {
                         profilePayload.put("coins", defaultProfile.getCoins());
                         profilePayload.put("badges", defaultProfile.getBadges());
                         profilePayload.put("equipment", defaultProfile.getEquipment());
+                        profilePayload.put("activeDays", defaultProfile.getActiveDays());
+                        profilePayload.put("lastLoginTime", defaultProfile.getLastLoginTime());
+                        profilePayload.put("xpHistory", defaultProfile.getXpHistory());
 
                         firestore.collection(USERS_COLLECTION)
                                 .document(userId)
@@ -244,6 +250,9 @@ public class UserRepository {
         profilePayload.put("coins", userProfile.getCoins());
         profilePayload.put("badges", userProfile.getBadges());
         profilePayload.put("equipment", userProfile.getEquipment());
+        profilePayload.put("activeDays", userProfile.getActiveDays());
+        profilePayload.put("lastLoginTime", userProfile.getLastLoginTime());
+        profilePayload.put("xpHistory", userProfile.getXpHistory());
 
         return firestore.collection(USERS_COLLECTION)
                 .document(userId)
@@ -259,6 +268,10 @@ public class UserRepository {
                 .collection("profile")
                 .document(userId);
 
+        // Današnji datum u formatu "yyyy-MM-dd"
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        String today = sdf.format(new java.util.Date());
+
         db.runTransaction((Transaction.Function<Void>) transaction -> {
             DocumentSnapshot snapshot = transaction.get(profileRef);
 
@@ -267,21 +280,38 @@ public class UserRepository {
                         FirebaseFirestoreException.Code.ABORTED);
             }
 
+            // Ažuriraj ukupan XP
             long currentXp = snapshot.getLong("xp") != null ? snapshot.getLong("xp") : 0;
             long newXp = currentXp + xpToAdd;
-
             transaction.update(profileRef, "xp", newXp);
+
+            // Ažuriraj XP istoriju za današnji dan
+            Map<String, Object> xpHistory = (Map<String, Object>) snapshot.get("xpHistory");
+            if (xpHistory == null) {
+                xpHistory = new HashMap<>();
+            }
+
+            // Dodaj XP za današnji dan (kumulativno)
+            long todayXp = 0;
+            if (xpHistory.containsKey(today)) {
+                Object todayValue = xpHistory.get(today);
+                if (todayValue instanceof Long) {
+                    todayXp = (Long) todayValue;
+                } else if (todayValue instanceof Integer) {
+                    todayXp = ((Integer) todayValue).longValue();
+                }
+            }
+            xpHistory.put(today, todayXp + xpToAdd);
+
+            transaction.update(profileRef, "xpHistory", xpHistory);
 
             // Transakcija mora da vrati null
             return null;
         }).addOnSuccessListener(aVoid ->
-                Log.d("XP_SYSTEM", "✅ Transakcija za XP uspešna za korisnika " + userId)
+                Log.d("XP_SYSTEM", "✅ Transakcija za XP uspešna za korisnika " + userId + " (+" + xpToAdd + " XP)")
         ).addOnFailureListener(e ->
                 Log.e("XP_SYSTEM", "❌ Greška u transakciji za XP: ", e)
         );
-
-
-
     }
     public void addCoinsToUser(String userId, int coinsToAdd) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -321,5 +351,59 @@ public class UserRepository {
     }
 
 
+
+    // Metoda za ažuriranje login streak-a
+    public void updateLoginStreak(String userId) {
+        final DocumentReference profileRef = firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PROFILE_SUBCOLLECTION)
+                .document(userId);
+
+        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
+            DocumentSnapshot snapshot = transaction.get(profileRef);
+
+            if (!snapshot.exists()) {
+                throw new FirebaseFirestoreException("Profil ne postoji!",
+                        FirebaseFirestoreException.Code.ABORTED);
+            }
+
+            long now = System.currentTimeMillis();
+            Long lastLoginTime = snapshot.getLong("lastLoginTime");
+            Long activeDays = snapshot.getLong("activeDays");
+
+            if (lastLoginTime == null) lastLoginTime = 0L;
+            if (activeDays == null) activeDays = 0L;
+
+            // Izračunaj razliku u danima
+            long oneDayInMillis = 24 * 60 * 60 * 1000;
+            long daysSinceLastLogin = (now - lastLoginTime) / oneDayInMillis;
+
+            if (lastLoginTime == 0) {
+                // Prvi login
+                activeDays = 1L;
+                Log.d(TAG, "Prvi login za korisnika " + userId);
+            } else if (daysSinceLastLogin >= 1 && daysSinceLastLogin < 2) {
+                // Logovanje u narednom danu - povećaj streak
+                activeDays++;
+                Log.d(TAG, "Uzastopni login za korisnika " + userId + ", aktivni dani: " + activeDays);
+            } else if (daysSinceLastLogin >= 2) {
+                // Propušten je dan - resetuj streak
+                activeDays = 1L;
+                Log.d(TAG, "Streak resetovan za korisnika " + userId);
+            } else {
+                // Isti dan - ne menjaj streak
+                Log.d(TAG, "Login u istom danu za korisnika " + userId);
+            }
+
+            transaction.update(profileRef, "activeDays", activeDays);
+            transaction.update(profileRef, "lastLoginTime", now);
+
+            return null;
+        }).addOnSuccessListener(aVoid ->
+                Log.d(TAG, "✅ Login streak ažuriran za korisnika " + userId)
+        ).addOnFailureListener(e ->
+                Log.e(TAG, "❌ Greška pri ažuriranju login streak-a: ", e)
+        );
+    }
 
 }

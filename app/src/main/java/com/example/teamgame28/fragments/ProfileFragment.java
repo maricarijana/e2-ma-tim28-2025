@@ -20,6 +20,7 @@ import com.example.teamgame28.R;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.model.UserProfile;
 import com.example.teamgame28.repository.UserRepository;
+import com.example.teamgame28.service.LevelingService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.zxing.BarcodeFormat;
@@ -39,6 +40,8 @@ public class ProfileFragment extends Fragment {
     private TextView profileEquipment;
     private ImageView profileQrCode;
     private Button btnChangePassword;
+    private Button btnViewStats;
+    private Button btnViewLevelProgress;
     private LinearLayout privateDataContainer;
 
     private UserRepository userRepository;
@@ -63,6 +66,8 @@ public class ProfileFragment extends Fragment {
         profileEquipment = view.findViewById(R.id.profile_equipment);
         profileQrCode = view.findViewById(R.id.profile_qr_code);
         btnChangePassword = view.findViewById(R.id.btn_change_password);
+        btnViewStats = view.findViewById(R.id.btn_view_stats);
+        btnViewLevelProgress = view.findViewById(R.id.btn_view_level_progress);
         privateDataContainer = view.findViewById(R.id.private_data_container);
 
         // Firebase i Repository
@@ -84,6 +89,26 @@ public class ProfileFragment extends Fragment {
 
             loadUserProfile(viewingUserId);
         }
+
+        // Dugme za level progress
+        btnViewLevelProgress.setOnClickListener(v -> {
+            LevelProgressFragment levelProgressFragment = new LevelProgressFragment();
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, levelProgressFragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        // Dugme za statistiku
+        btnViewStats.setOnClickListener(v -> {
+            StatsFragment statsFragment = new StatsFragment();
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, statsFragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
 
         // Dugme za promenu lozinke
         btnChangePassword.setOnClickListener(v -> {
@@ -109,6 +134,18 @@ public class ProfileFragment extends Fragment {
                         @Override
                         public void onSuccess(UserProfile userProfile) {
                             if (userProfile != null) {
+                                // VAŽNO: Preračunaj nivo, titulu i PP iz XP-a PRIJE prikaza
+                                int calculatedLevel = LevelingService.calculateLevelFromXp(userProfile.getXp());
+                                userProfile.setLevel(calculatedLevel);
+
+                                // Postavi titulu za trenutni nivo
+                                String title = LevelingService.getTitleForLevel(calculatedLevel);
+                                userProfile.setTitle(title);
+
+                                // Postavi ukupan PP za trenutni nivo
+                                int totalPP = LevelingService.getTotalPpForLevel(calculatedLevel);
+                                userProfile.setPowerPoints(totalPP);
+
                                 displayUserProfile(user, userProfile, userId.equals(currentUserId));
                             }
                         }
@@ -155,6 +192,8 @@ public class ProfileFragment extends Fragment {
         if (isOwnProfile) {
             privateDataContainer.setVisibility(View.VISIBLE);
             btnChangePassword.setVisibility(View.VISIBLE);
+            btnViewStats.setVisibility(View.VISIBLE);
+            btnViewLevelProgress.setVisibility(View.VISIBLE);
 
             profilePowerPoints.setText(userProfile.getPowerPoints() + " PP");
             profileCoins.setText(String.valueOf(userProfile.getCoins()));
@@ -184,6 +223,8 @@ public class ProfileFragment extends Fragment {
             // Ako gledamo tuđi profil, sakrij privatne podatke
             privateDataContainer.setVisibility(View.GONE);
             btnChangePassword.setVisibility(View.GONE);
+            btnViewStats.setVisibility(View.GONE);
+            btnViewLevelProgress.setVisibility(View.GONE);
         }
 
         // QR kod (javno vidljiv)

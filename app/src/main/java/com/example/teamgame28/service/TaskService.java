@@ -14,9 +14,16 @@ import java.util.List;
 public class TaskService {
 
     private final TaskRepository repository;
+    private final UserService userService;
 
     public TaskService(Context context) {
         this.repository = TaskRepository.getInstance(context);
+        this.userService = new UserService();
+
+        // Postavi callback za XP dodelu kada se task završi
+        repository.setOnTaskFinishedListener((userId, xpAmount) -> {
+            userService.addXpToUserWithLevelUp(userId, xpAmount);
+        });
     }
     // 🔹 Vrati sve taskove korisnika
     public LiveData<List<Task>> getTasksByUser(String userId) {
