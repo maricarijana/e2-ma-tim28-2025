@@ -19,7 +19,12 @@ public class UserProfile implements Serializable {
     private int powerPoints;
     private int coins;
     private List<String> badges;
+   //zameniti ovo sa pravom listom equipmenta
     private List<String> equipment;
+
+    private List<Equipment> ownedEquipment;  // sva oprema koju korisnik poseduje
+    private List<Equipment> activeEquipment; // trenutno aktivna oprema (max 1 potion, više armora i oružja)
+
 
     // Statistika
     private int activeDays; // Broj dana aktivnog korišćenja (streak)
@@ -38,6 +43,8 @@ public class UserProfile implements Serializable {
         this.qrCode = "";
         this.activeDays = 0;
         this.lastLoginTime = 0;
+        this.ownedEquipment = new ArrayList<>();
+        this.activeEquipment = new ArrayList<>();
         this.xpHistory = new HashMap<>();
     }
 
@@ -77,6 +84,21 @@ public class UserProfile implements Serializable {
 
     public Map<String, Integer> getXpHistory() { return xpHistory; }
     public void setXpHistory(Map<String, Integer> xpHistory) { this.xpHistory = xpHistory; }
+    public List<Equipment> getOwnedEquipment() {
+        return ownedEquipment;
+    }
+
+    public List<Equipment> getActiveEquipment() {
+        return activeEquipment;
+    }
+
+    public void setOwnedEquipment(List<Equipment> ownedEquipment) {
+        this.ownedEquipment = ownedEquipment;
+    }
+
+    public void setActiveEquipment(List<Equipment> activeEquipment) {
+        this.activeEquipment = activeEquipment;
+    }
 
     public void addCoins(int amount) {
         this.coins += amount;

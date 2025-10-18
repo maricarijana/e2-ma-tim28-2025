@@ -16,7 +16,9 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.teamgame28.R;
 import com.example.teamgame28.fragments.CategoryManagementFragment;
+import com.example.teamgame28.fragments.EquipmentActivationFragment;
 import com.example.teamgame28.fragments.ProfileFragment;
+import com.example.teamgame28.fragments.ShopFragment;
 import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
 import com.example.teamgame28.model.User;
@@ -87,6 +89,16 @@ public class MainActivity extends AppCompatActivity {
                         .commit();
             } else if (itemId == R.id.nav_boss_battle) {
                 startBossBattle();
+            } else if (itemId == R.id.nav_shop) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new ShopFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_equipment) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new EquipmentActivationFragment())
+                        .commit();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()
                         .beginTransaction()
