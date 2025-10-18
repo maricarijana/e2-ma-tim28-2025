@@ -92,6 +92,12 @@ public class RewardActivity extends AppCompatActivity implements SensorEventList
         equipmentDropped = intent.getBooleanExtra("EQUIPMENT_DROPPED", false);
         isWeapon = intent.getBooleanExtra("IS_WEAPON", false);
         bossDefeated = intent.getBooleanExtra("BOSS_DEFEATED", false);
+
+        android.util.Log.d("RewardActivity", "========== REWARD ACTIVITY STARTED ==========");
+        android.util.Log.d("RewardActivity", "Coins earned: " + coinsEarned);
+        android.util.Log.d("RewardActivity", "Equipment dropped: " + equipmentDropped);
+        android.util.Log.d("RewardActivity", "Is weapon: " + isWeapon);
+        android.util.Log.d("RewardActivity", "Boss defeated: " + bossDefeated);
     }
 
     private void initializeSensor() {
@@ -132,10 +138,22 @@ public class RewardActivity extends AppCompatActivity implements SensorEventList
             equipmentRewardLayout.setVisibility(View.VISIBLE);
             if (isWeapon) {
                 equipmentRewardText.setText("New Weapon!");
-                // TODO: Set weapon icon
+                // Nasumično izaberi weapon ikonu (50% sword, 50% bow)
+                int weaponIcon = (Math.random() < 0.5) ? R.drawable.swords : R.drawable.bow;
+                equipmentRewardImage.setImageResource(weaponIcon);
             } else {
                 equipmentRewardText.setText("New Armor!");
-                // TODO: Set armor icon
+                // Nasumično izaberi armor ikonu (gloves, shield, ili boots)
+                double random = Math.random();
+                int armorIcon;
+                if (random < 0.33) {
+                    armorIcon = R.drawable.gloves;
+                } else if (random < 0.66) {
+                    armorIcon = R.drawable.shield;
+                } else {
+                    armorIcon = R.drawable.boots;
+                }
+                equipmentRewardImage.setImageResource(armorIcon);
             }
         }
     }

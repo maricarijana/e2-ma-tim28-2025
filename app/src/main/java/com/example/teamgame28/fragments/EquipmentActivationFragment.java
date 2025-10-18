@@ -1,5 +1,6 @@
 package com.example.teamgame28.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,12 +18,20 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.teamgame28.R;
+import com.example.teamgame28.activities.BattleActivity;
 import com.example.teamgame28.adapters.EquipmentActivationAdapter;
+import com.example.teamgame28.model.BattleData;
 import com.example.teamgame28.model.Clothing;
 import com.example.teamgame28.model.Equipment;
 import com.example.teamgame28.model.EquipmentType;
 import com.example.teamgame28.model.Potion;
+import com.example.teamgame28.model.UserProfile;
 import com.example.teamgame28.model.Weapon;
+import com.example.teamgame28.repository.BossRepository;
+import com.example.teamgame28.repository.UserRepository;
+import com.example.teamgame28.service.BattleService;
+import com.example.teamgame28.service.BossService;
+import com.example.teamgame28.service.EquipmentService;
 import com.example.teamgame28.viewmodels.EquipmentViewModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -37,6 +46,8 @@ import java.util.List;
 public class EquipmentActivationFragment extends Fragment {
 
     private EquipmentViewModel viewModel;
+    private UserRepository userRepository;
+    private EquipmentService equipmentService;
 
     private RecyclerView recyclerActiveEquipment;
     private RecyclerView recyclerPotions;
@@ -57,6 +68,15 @@ public class EquipmentActivationFragment extends Fragment {
     private EquipmentActivationAdapter weaponsAdapter;
 
     private String userId;
+    private UserProfile currentUserProfile;
+    private BattleService battleService;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        battleService = new BattleService(new BossService(new BossRepository()), requireContext());
+    }
+
 
     @Nullable
     @Override
@@ -80,6 +100,8 @@ public class EquipmentActivationFragment extends Fragment {
 
         // ViewModel
         viewModel = new ViewModelProvider(this).get(EquipmentViewModel.class);
+        userRepository = new UserRepository();
+        equipmentService = new EquipmentService();
 
         // Dobij trenutnog korisnika
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -91,6 +113,9 @@ public class EquipmentActivationFragment extends Fragment {
 
         // Setup RecyclerViews
         setupRecyclerViews();
+
+        // Učitaj UserProfile
+        loadUserProfile();
 
         // Učitaj podatke
         loadEquipment();
@@ -120,6 +145,11 @@ public class EquipmentActivationFragment extends Fragment {
                     public void onDeactivateClick(Equipment equipment) {
                         viewModel.deactivateEquipment(equipment.getId());
                     }
+
+                    @Override
+                    public void onUpgradeClick(Weapon weapon) {
+                        // Ne prikazuje se na aktivnoj listi
+                    }
                 }, true); // isActiveList = true
 
         recyclerActiveEquipment.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -136,6 +166,11 @@ public class EquipmentActivationFragment extends Fragment {
                     @Override
                     public void onDeactivateClick(Equipment equipment) {
                         // Ne bi trebalo da se desi
+                    }
+
+                    @Override
+                    public void onUpgradeClick(Weapon weapon) {
+                        // Potions ne mogu da se upgrade-uju
                     }
                 }, false); // isActiveList = false
 
@@ -154,6 +189,11 @@ public class EquipmentActivationFragment extends Fragment {
                     public void onDeactivateClick(Equipment equipment) {
                         // Ne bi trebalo da se desi
                     }
+
+                    @Override
+                    public void onUpgradeClick(Weapon weapon) {
+                        // Clothing ne može da se upgrade-uje
+                    }
                 }, false);
 
         recyclerClothing.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -171,10 +211,32 @@ public class EquipmentActivationFragment extends Fragment {
                     public void onDeactivateClick(Equipment equipment) {
                         // Ne bi trebalo da se desi
                     }
+
+                    @Override
+                    public void onUpgradeClick(Weapon weapon) {
+                        upgradeWeapon(weapon);
+                    }
                 }, false);
 
         recyclerWeapons.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerWeapons.setAdapter(weaponsAdapter);
+    }
+
+    /**
+     * Učitava UserProfile.
+     */
+    private void loadUserProfile() {
+        userRepository.getUserProfileById(userId, new UserRepository.UserProfileCallback() {
+            @Override
+            public void onSuccess(UserProfile userProfile) {
+                currentUserProfile = userProfile;
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(getContext(), "Greška pri učitavanju profila", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /**
@@ -294,15 +356,84 @@ public class EquipmentActivationFragment extends Fragment {
     }
 
     /**
-     * Klik na dugme "Potvrdi".
+     * Klik na dugme "Potvrdi" - pokreće Boss Battle.
      */
     private void onConfirmClicked() {
         Toast.makeText(getContext(), "Aktivacija potvrđena! Spreman za borbu.", Toast.LENGTH_SHORT).show();
 
-        // Ovde možeš pozvati BattleActivity ili se vratiti nazad
-        // Npr. startActivity(new Intent(getActivity(), BattleActivity.class));
+        battleService.prepareBattleData(userId, new BattleService.PrepareBattleCallback() {
+            @Override
+            public void onSuccess(BattleData battleData) {
+                Intent intent = new Intent(getActivity(), BattleActivity.class);
+                intent.putExtra("BOSS_ID", battleData.getBossId());  // Boss ID iz Firestore
+                intent.putExtra("BOSS_LEVEL", battleData.getBossLevel());
+                intent.putExtra("BOSS_HP", battleData.getBossHP());
+                intent.putExtra("BOSS_CURRENT_HP", battleData.getBossCurrentHP());
+                intent.putExtra("BOSS_COINS_REWARD", battleData.getBossCoinsReward());
+                intent.putExtra("IS_EXISTING_BOSS", battleData.isExistingBoss());
+                intent.putExtra("PLAYER_PP", battleData.getTotalPP());
+                intent.putExtra("SUCCESS_RATE", battleData.getSuccessRate());
+                intent.putExtra("TOTAL_ATTACKS", battleData.getTotalAttacks());
+                intent.putExtra("ACTIVE_EQUIPMENT", battleData.getActiveEquipmentNames());
+                startActivity(intent);
+            }
 
-        // Ili samo zatvori fragment
-        requireActivity().getSupportFragmentManager().popBackStack();
+            @Override
+            public void onFailure(String error) {
+                Toast.makeText(getContext(), "Greška: " + error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+
+    /**
+     * Upgrade oružja.
+     */
+    private void upgradeWeapon(Weapon weapon) {
+        // Proveri da li je UserProfile učitan
+        if (currentUserProfile == null) {
+            Toast.makeText(getContext(), "Greška: profil nije učitan", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int userCoins = currentUserProfile.getCoins();
+        int userLevel = currentUserProfile.getLevel();
+
+        // Izračunaj cenu upgrade-a (60% boss reward-a od prethodnog levela)
+        int upgradeCost = equipmentService.calculateUpgradePriceForLevel(userLevel);
+
+        // Proveri da li korisnik ima dovoljno novca
+        if (userCoins < upgradeCost) {
+            Toast.makeText(getContext(),
+                "Nemate dovoljno novčića! Potrebno: " + upgradeCost + ", imate: " + userCoins,
+                Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Prikaži dijalog za potvrdu
+        showUpgradeConfirmationDialog(weapon, upgradeCost, userCoins);
+    }
+
+    /**
+     * Prikazuje dijalog za potvrdu upgrade-a.
+     */
+    private void showUpgradeConfirmationDialog(Weapon weapon, int upgradeCost, int userCoins) {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Upgrade oružja")
+                .setMessage("Želite da unapredite " + weapon.getName() + "?\n\n" +
+                        "Cena: " + upgradeCost + " coins\n" +
+                        "Vaši coins: " + userCoins + "\n\n" +
+                        "Trenutna verovatnoća: " + String.format("%.1f", weapon.getProbability() * 100) + "%\n" +
+                        "Nova verovatnoća: " + String.format("%.1f", (weapon.getProbability() + 0.01) * 100) + "%\n" +
+                        "Novi nivo: " + (weapon.getUpgradeLevel() + 1))
+                .setPositiveButton("Upgrade", (dialog, which) -> {
+                    // Pozovi upgrade
+                    viewModel.upgradeWeapon(weapon, userCoins, upgradeCost);
+
+                    // Osveži profil
+                    loadUserProfile();
+                })
+                .setNegativeButton("Otkaži", null)
+                .show();
     }
 }

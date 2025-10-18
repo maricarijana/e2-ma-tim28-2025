@@ -202,7 +202,9 @@ public class EquipmentService {
     /**
      * Potroši jednokratne napitke nakon borbe.
      * Trajni napitci ostaju aktivni.
+     * DEPRECATED: Koristi processPostBattle() umesto ove metode.
      */
+    @Deprecated
     public void consumeOnTimePotions(String userId, List<Equipment> activeEquipment) {
         for (Equipment eq : activeEquipment) {
             if (eq instanceof Potion) {
@@ -226,10 +228,43 @@ public class EquipmentService {
 
     /**
      * Obrada nakon borbe: potroši napitke i smanji trajanje odeće.
+     * Ova metoda je ASINHRONA - koristi callback da znaš kada je završena!
      */
-    public void processPostBattle(String userId, List<Equipment> activeEquipment) {
-        consumeOnTimePotions(userId, activeEquipment);
-        decreaseClothingDuration(userId);
+    public void processPostBattle(String userId, PostBattleCallback callback) {
+        Log.d(TAG, "🔧 processPostBattle CALLED for userId: " + userId);
+
+        // 1. Prvo potroši sve ONETIME potions ODJEDNOM (izbegavamo race conditions)
+        equipmentRepository.consumeAllOneTimePotions(userId, new EquipmentRepository.PostBattleCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "✅ consumeAllOneTimePotions SUCCESS callback");
+
+                // 2. Zatim smanji clothing duration
+                equipmentRepository.decreaseClothingDuration(userId);
+
+                Log.d(TAG, "✅ Post-battle obrada završena - pozivam SUCCESS callback");
+                if (callback != null) {
+                    callback.onSuccess();
+                } else {
+                    Log.e(TAG, "❌ Callback je NULL!");
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "❌ consumeAllOneTimePotions FAILURE callback", e);
+
+                // Ipak pokušaj da smanjiš clothing duration
+                equipmentRepository.decreaseClothingDuration(userId);
+
+                Log.d(TAG, "Pozivam FAILURE callback");
+                if (callback != null) {
+                    callback.onFailure(e);
+                } else {
+                    Log.e(TAG, "❌ Callback je NULL!");
+                }
+            }
+        });
     }
 
     // ========== PRIMENA EFEKATA ==========
@@ -252,6 +287,7 @@ public class EquipmentService {
         double successBoost = 0.0;
         double extraAttackChance = 0.0;
         double coinBoost = 0.0;
+        java.util.Random random = new java.util.Random();
 
         for (Equipment eq : activeEquipment) {
             if (!eq.isActive()) continue;
@@ -274,9 +310,21 @@ public class EquipmentService {
             }
             else if (eq instanceof Weapon) {
                 Weapon weapon = (Weapon) eq;
-                ppBoost += (int) (basePP * weapon.getPpBoostPercent());
-                coinBoost += weapon.getCoinBoostPercent();
-                Log.d(TAG, "Weapon applied: " + weapon.getName());
+
+                // Oružje ima verovatnoću da će se primeniti
+                // Probability raste sa upgrade-om (+0.01 po upgrade-u) i duplikatima (+0.02 po duplikatu)
+                double weaponProbability = weapon.getProbability();
+
+                // Bacanje kockice - da li će weapon raditi?
+                if (random.nextDouble() < weaponProbability) {
+                    ppBoost += (int) (basePP * weapon.getPpBoostPercent());
+                    coinBoost += weapon.getCoinBoostPercent();
+                    Log.d(TAG, "✅ Weapon SUCCESS: " + weapon.getName() +
+                          " (probability: " + (weaponProbability * 100) + "%)");
+                } else {
+                    Log.d(TAG, "❌ Weapon FAILED: " + weapon.getName() +
+                          " (probability: " + (weaponProbability * 100) + "%)");
+                }
             }
         }
 
@@ -298,7 +346,7 @@ public class EquipmentService {
      * @param level nivo bossa
      * @return nagrada u coinima
      */
-    private int calculateBossRewardForLevel(int level) {
+    public int calculateBossRewardForLevel(int level) {
         if (level <= 0) return 200;
         if (level == 1) return 200;
 
@@ -307,6 +355,18 @@ public class EquipmentService {
             reward = (int) (reward * 1.2);
         }
         return reward;
+    }
+
+    /**
+     * Računa cenu upgrade-a za oružje na osnovu user levela.
+     * Cena = 60% od boss reward-a prethodnog levela.
+     *
+     * @param userLevel trenutni nivo korisnika
+     * @return cena upgrade-a
+     */
+    public int calculateUpgradePriceForLevel(int userLevel) {
+        int baseReward = calculateBossRewardForLevel(userLevel);
+        return calculateUpgradePrice(baseReward);
     }
 
     /**
@@ -335,6 +395,58 @@ public class EquipmentService {
 
         Log.d(TAG, "Cene ažurirane za user level " + userLevel +
               " (baseReward=" + baseReward + ")");
+    }
+
+    /**
+     * Izračunava broj dodatnih napada od čizama.
+     * Svaki par čizama ima 40% šansu da dodeli 1 dodatni napad.
+     *
+     * @param activeEquipment lista aktivne opreme
+     * @return broj dodatnih napada
+     */
+    public int calculateExtraAttacks(List<Equipment> activeEquipment) {
+        int extraAttacks = 0;
+        java.util.Random random = new java.util.Random();
+
+        for (Equipment eq : activeEquipment) {
+            if (eq instanceof Clothing) {
+                Clothing clothing = (Clothing) eq;
+
+                // Proveri da li su ovo čizme (imaju extraAttackChance > 0)
+                if (clothing.getExtraAttackChance() > 0 && eq.isActive()) {
+                    // 40% šansa (0.4) za +1 napad
+                    double chance = clothing.getExtraAttackChance();
+                    if (random.nextDouble() < chance) {
+                        extraAttacks++;
+                        Log.d(TAG, "✅ Čizme dodelile dodatni napad! (" + (chance * 100) + "%)");
+                    }
+                }
+            }
+        }
+
+        Log.d(TAG, "Ukupno dodatnih napada od čizama: " + extraAttacks);
+        return extraAttacks;
+    }
+
+    /**
+     * Kreira string sa imenima aktivne opreme za prikaz u UI.
+     */
+    public String getActiveEquipmentNames(List<Equipment> activeEquipment) {
+        if (activeEquipment == null || activeEquipment.isEmpty()) {
+            return "None";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Equipment eq : activeEquipment) {
+            if (eq.isActive()) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(eq.getName());
+            }
+        }
+
+        return sb.length() > 0 ? sb.toString() : "None";
     }
 
     // ========== STATIC DATA GETTERS ==========
@@ -375,5 +487,10 @@ public class EquipmentService {
     public interface UpgradeWeaponCallback {
         void onSuccess(String message);
         void onFailure(String error);
+    }
+
+    public interface PostBattleCallback {
+        void onSuccess();
+        void onFailure(Exception e);
     }
 }

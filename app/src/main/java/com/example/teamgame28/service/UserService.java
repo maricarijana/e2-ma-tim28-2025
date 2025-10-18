@@ -110,9 +110,12 @@ public class UserService {
                     profile.setPowerPoints(oldPp + totalPpReward);
                     profile.updateTitle();
 
+                    // 🔹 Ažuriraj timestamp početka nove etape
+                    profile.setCurrentLevelStartTimestamp(System.currentTimeMillis());
+
                     android.util.Log.d("UserService", "🎉 Level UP! " + userId +
                             " je prešao sa nivoa " + oldLevel + " na nivo " + newLevel +
-                            " i dobio " + totalPpReward + " PP!");
+                            " i dobio " + totalPpReward + " PP! Nova etapa počinje.");
                 }
 
                 // Snimi ažurirani profil u bazu

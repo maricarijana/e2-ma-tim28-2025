@@ -64,16 +64,36 @@
 
         </LinearLayout>
 
-        <!-- Dugme za aktivaciju/deaktivaciju -->
-        <Button
-            android:id="@+id/btn_action"
+        <!-- Dugmad (vertikalni layout) -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:text="Aktiviraj"
-            android:textSize="13sp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp" />
+            android:orientation="vertical"
+            android:layout_gravity="center_vertical">
+
+            <!-- Dugme za aktivaciju/deaktivaciju -->
+            <Button
+                android:id="@+id/btn_action"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aktiviraj"
+                android:textSize="13sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp" />
+
+            <!-- Dugme za upgrade (samo za oružje) -->
+            <Button
+                android:id="@+id/btn_upgrade"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Upgrade"
+                android:textSize="13sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

@@ -145,6 +145,7 @@ public class BossRepository {
      */
     private Boss documentToBoss(QueryDocumentSnapshot document) {
         Boss boss = new Boss();
+        boss.setId(document.getId());  // Postavi Firestore document ID
         boss.setUserId(document.getString("userId"));
 
         Long bossLevel = document.getLong("bossLevel");

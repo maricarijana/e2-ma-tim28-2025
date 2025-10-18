@@ -110,4 +110,43 @@ public class BossService {
         }
         return true; // Uvek se pojavljuje bos nakon nivoa
     }
+
+    /**
+     * Vraća bosa sa kojim korisnik treba da se bori.
+     * LOGIKA "ČEKAONICA":
+     * - Ako postoji nepobeđeni boss, on se prikazuje PRE nego što se kreira novi boss.
+     * - Nema biranja, nema preskakanja.
+     * - Ne možeš dalje dok ne rešiš starog neprijatelja.
+     *
+     * @param userId ID korisnika
+     * @param currentLevel Trenutni nivo korisnika
+     * @param callback Callback sa Boss objektom ili null ako nema
+     */
+    public void getBossForBattle(String userId, int currentLevel, BossCallback callback) {
+        // Prvo proveri da li ima nepobeđenih bosova
+        getCurrentUndefeatedBoss(userId).observeForever(undefeatedBoss -> {
+            if (undefeatedBoss != null) {
+                // ✅ Postoji nepobeđeni boss - vrati njega (čekaonica)
+                android.util.Log.d("BossService", "🔴 Nepobeđeni boss pronađen: Level " + undefeatedBoss.getBossLevel());
+                callback.onSuccess(undefeatedBoss, true); // true = existing boss
+            } else {
+                // ❌ Nema nepobeđenih bosova - kreiraj novog za trenutni nivo
+                android.util.Log.d("BossService", "✅ Nema nepobeđenih bosova, kreiram novog za nivo " + currentLevel);
+
+                // Dohvati poslednjeg pobeđenog bosa da izračunaš HP/coins
+                getLastDefeatedBoss(userId).observeForever(lastDefeatedBoss -> {
+                    Boss newBoss = getOrCreateBossForLevel(userId, currentLevel, lastDefeatedBoss);
+                    callback.onSuccess(newBoss, false); // false = new boss
+                });
+            }
+        });
+    }
+
+    /**
+     * Callback interface za dohvatanje bosa
+     */
+    public interface BossCallback {
+        void onSuccess(Boss boss, boolean isExistingBoss);
+        void onFailure(String error);
+    }
 }

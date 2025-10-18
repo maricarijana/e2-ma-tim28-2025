@@ -10,7 +10,7 @@ public class Weapon extends Equipment {
         super();
         this.type = EquipmentType.WEAPON;
         this.upgradeLevel = 0;
-        this.probability = 0.0;
+        this.probability = 0.05; // Bazna verovatnoća 5% (šansa drop-a nakon pobede)
     }
 
     public Weapon(String id, String name, int cost,
@@ -18,7 +18,7 @@ public class Weapon extends Equipment {
         super(id, name, EquipmentType.WEAPON, cost,imageResId);
         this.ppBoostPercent = ppBoostPercent;
         this.coinBoostPercent = coinBoostPercent;
-        this.probability = 0.0;
+        this.probability = 0.05; // Bazna verovatnoća 5% (šansa drop-a nakon pobede)
         this.upgradeLevel = 0;
     }
 
@@ -31,11 +31,11 @@ public class Weapon extends Equipment {
 
     public void upgrade() {
         upgradeLevel++;
-        probability += 0.01;
+        probability += 0.0001; // +0.01% u decimalnom obliku
     }
 
     public void addDuplicate() {
-        probability += 0.02;
+        probability += 0.0002; // +0.02% u decimalnom obliku
     }
 
     // Getteri i setteri

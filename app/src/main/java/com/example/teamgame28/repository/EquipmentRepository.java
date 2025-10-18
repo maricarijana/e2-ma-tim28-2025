@@ -80,7 +80,7 @@ public class EquipmentRepository {
         return liveData;
     }
 
-    // ✅ Dodaj item u ownedEquipment i smanji coin balance
+    // ✅ Dodaj item u odgovarajuću owned listu i smanji coin balance
     public void buyEquipment(String userId, Equipment equipment, int newCoinBalance) {
         db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -93,11 +93,24 @@ public class EquipmentRepository {
                     UserProfile profile = snapshot.toObject(UserProfile.class);
                     if (profile == null) return;
 
-                    List<Equipment> owned = profile.getOwnedEquipment();
-                    if (owned == null) owned = new ArrayList<>();
-                    owned.add(equipment);
+                    // Dodaj u odgovarajuću listu po tipu
+                    if (equipment instanceof com.example.teamgame28.model.Potion) {
+                        List<com.example.teamgame28.model.Potion> owned = profile.getOwnedPotions();
+                        if (owned == null) owned = new ArrayList<>();
+                        owned.add((com.example.teamgame28.model.Potion) equipment);
+                        profile.setOwnedPotions(owned);
+                    } else if (equipment instanceof Clothing) {
+                        List<Clothing> owned = profile.getOwnedClothing();
+                        if (owned == null) owned = new ArrayList<>();
+                        owned.add((Clothing) equipment);
+                        profile.setOwnedClothing(owned);
+                    } else if (equipment instanceof Weapon) {
+                        List<Weapon> owned = profile.getOwnedWeapons();
+                        if (owned == null) owned = new ArrayList<>();
+                        owned.add((Weapon) equipment);
+                        profile.setOwnedWeapons(owned);
+                    }
 
-                    profile.setOwnedEquipment(owned);
                     profile.setCoins(newCoinBalance);
 
                     db.collection(USERS_COLLECTION)
@@ -112,7 +125,7 @@ public class EquipmentRepository {
                 });
     }
 
-    // ✅ Aktiviraj opremu → prebaci u activeEquipment
+    // ✅ Aktiviraj opremu → ukloni iz owned liste i prebaci u active listu
     public void activateEquipment(String userId, Equipment equipment) {
         db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -125,22 +138,80 @@ public class EquipmentRepository {
                     UserProfile profile = snapshot.toObject(UserProfile.class);
                     if (profile == null) return;
 
-                    List<Equipment> active = profile.getActiveEquipment();
-                    if (active == null) active = new ArrayList<>();
-                    active.add(equipment);
-                    profile.setActiveEquipment(active);
+                    // Aktiviraj opremu i ukloni iz owned liste, dodaj u active listu
+                    if (equipment instanceof com.example.teamgame28.model.Potion) {
+                        com.example.teamgame28.model.Potion potion = (com.example.teamgame28.model.Potion) equipment;
 
+                        // ONETIME napici se sklanjaju iz owned liste
+                        if (potion.getPotionType() == com.example.teamgame28.model.PotionType.ONETIME) {
+                            List<com.example.teamgame28.model.Potion> owned = profile.getOwnedPotions();
+                            if (owned != null) {
+                                owned.removeIf(p -> p.getId().equals(potion.getId()));
+                                profile.setOwnedPotions(owned);
+                            }
+
+                            List<com.example.teamgame28.model.Potion> active = profile.getActivePotions();
+                            if (active == null) active = new ArrayList<>();
+                            active.add(potion);
+                            profile.setActivePotions(active);
+
+                            Log.d("EquipmentRepo", "✅ ONETIME potion aktiviran i uklonjen iz owned liste: " + potion.getName());
+                        }
+                        // PERMANENT napici se NE sklanjaju iz owned liste, samo se označe kao consumed
+                        // To se radi u applyPermanentPotionBoost() metodi
+
+                    } else if (equipment instanceof Clothing) {
+                        Clothing clothing = (Clothing) equipment;
+
+                        // Ukloni iz owned liste
+                        List<Clothing> owned = profile.getOwnedClothing();
+                        if (owned != null) {
+                            owned.removeIf(c -> c.getId().equals(clothing.getId()));
+                            profile.setOwnedClothing(owned);
+                        }
+
+                        // Dodaj u active listu
+                        List<Clothing> active = profile.getActiveClothing();
+                        if (active == null) active = new ArrayList<>();
+                        active.add(clothing);
+                        profile.setActiveClothing(active);
+
+                        Log.d("EquipmentRepo", "✅ Clothing aktivirana i uklonjena iz owned liste: " + clothing.getName());
+
+                    } else if (equipment instanceof Weapon) {
+                        Weapon weapon = (Weapon) equipment;
+
+                        // Ukloni iz owned liste
+                        List<Weapon> owned = profile.getOwnedWeapons();
+                        if (owned != null) {
+                            owned.removeIf(w -> w.getId().equals(weapon.getId()));
+                            profile.setOwnedWeapons(owned);
+                        }
+
+                        // Dodaj u active listu
+                        List<Weapon> active = profile.getActiveWeapons();
+                        if (active == null) active = new ArrayList<>();
+                        active.add(weapon);
+                        profile.setActiveWeapons(active);
+
+                        Log.d("EquipmentRepo", "✅ Weapon aktiviran i uklonjen iz owned liste: " + weapon.getName());
+                    }
+
+                    // Sačuvaj izmene u Firestore
                     db.collection(USERS_COLLECTION)
                             .document(userId)
                             .collection(PROFILE_SUBCOLLECTION)
                             .document(userId)
                             .set(profile)
                             .addOnSuccessListener(aVoid ->
-                                    Log.d("EquipmentRepo", "✅ Aktivirana oprema: " + equipment.getName()));
+                                    Log.d("EquipmentRepo", "✅ Oprema aktivirana i profil ažuriran"))
+                            .addOnFailureListener(e ->
+                                    Log.e("EquipmentRepo", "❌ Greška pri aktivaciji opreme", e));
                 });
     }
 
-    // ✅ Potroši ONETIME potion → ukloni ga iz activeEquipment I ownedEquipment
+    // ✅ Potroši ONETIME potion → ukloni ga iz activePotions I ownedPotions
+    // DEPRECATED: Koristi consumeAllOneTimePotions() umesto ove metode da izbegneš race conditions
     public void consumePotion(String userId, String potionId) {
         db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -153,18 +224,18 @@ public class EquipmentRepository {
                     UserProfile profile = snapshot.toObject(UserProfile.class);
                     if (profile == null) return;
 
-                    // Ukloni iz activeEquipment
-                    List<Equipment> active = profile.getActiveEquipment();
+                    // Ukloni iz activePotions
+                    List<com.example.teamgame28.model.Potion> active = profile.getActivePotions();
                     if (active != null) {
                         active.removeIf(eq -> eq.getId().equals(potionId));
-                        profile.setActiveEquipment(active);
+                        profile.setActivePotions(active);
                     }
 
-                    // Ukloni iz ownedEquipment (ONETIME napitci se potpuno troše)
-                    List<Equipment> owned = profile.getOwnedEquipment();
+                    // Ukloni iz ownedPotions (ONETIME napitci se potpuno troše)
+                    List<com.example.teamgame28.model.Potion> owned = profile.getOwnedPotions();
                     if (owned != null) {
                         owned.removeIf(eq -> eq.getId().equals(potionId));
-                        profile.setOwnedEquipment(owned);
+                        profile.setOwnedPotions(owned);
                     }
 
                     db.collection(USERS_COLLECTION)
@@ -177,7 +248,112 @@ public class EquipmentRepository {
                 });
     }
 
-    // ✅ Unapredi weapon u ownedEquipment
+    /**
+     * ✅ Potroši SVE aktivne ONETIME potions odjednom - izbegava race conditions.
+     * Učitava profil JEDNOM, uklanja sve ONETIME potions iz obe liste, i čuva JEDNOM.
+     */
+    public void consumeAllOneTimePotions(String userId, PostBattleCallback callback) {
+        Log.d("EquipmentRepo", "🔧 consumeAllOneTimePotions CALLED for userId: " + userId);
+
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PROFILE_SUBCOLLECTION)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Log.d("EquipmentRepo", "📦 Snapshot retrieved");
+
+                    if (!snapshot.exists()) {
+                        Log.e("EquipmentRepo", "❌ Snapshot ne postoji!");
+                        if (callback != null) callback.onFailure(new Exception("UserProfile ne postoji"));
+                        return;
+                    }
+
+                    UserProfile profile = snapshot.toObject(UserProfile.class);
+                    if (profile == null) {
+                        Log.e("EquipmentRepo", "❌ Profile je null nakon parsiranja!");
+                        if (callback != null) callback.onFailure(new Exception("Greška pri parsiranju profila"));
+                        return;
+                    }
+
+                    Log.d("EquipmentRepo", "✅ Profile parsed successfully");
+
+                    List<String> consumedPotionIds = new ArrayList<>();
+
+                    // Pronađi sve ONETIME potions koji su aktivni
+                    List<com.example.teamgame28.model.Potion> activePotions = profile.getActivePotions();
+                    if (activePotions != null) {
+                        Log.d("EquipmentRepo", "Checking " + activePotions.size() + " active potions");
+                        for (com.example.teamgame28.model.Potion potion : activePotions) {
+                            if (potion.getPotionType() == com.example.teamgame28.model.PotionType.ONETIME && potion.isActive()) {
+                                consumedPotionIds.add(potion.getId());
+                                Log.d("EquipmentRepo", "Found ONETIME potion to consume: " + potion.getName());
+                            }
+                        }
+                    } else {
+                        Log.d("EquipmentRepo", "No active potions");
+                    }
+
+                    if (consumedPotionIds.isEmpty()) {
+                        Log.d("EquipmentRepo", "Nema ONETIME potions za potrošnju - pozivam SUCCESS callback");
+                        if (callback != null) {
+                            callback.onSuccess();
+                        } else {
+                            Log.e("EquipmentRepo", "❌ Callback je NULL!");
+                        }
+                        return;
+                    }
+
+                    // Ukloni iz activePotions
+                    if (activePotions != null) {
+                        activePotions.removeIf(p -> consumedPotionIds.contains(p.getId()));
+                        profile.setActivePotions(activePotions);
+                    }
+
+                    // Ukloni iz ownedPotions
+                    List<com.example.teamgame28.model.Potion> ownedPotions = profile.getOwnedPotions();
+                    if (ownedPotions != null) {
+                        ownedPotions.removeIf(p -> consumedPotionIds.contains(p.getId()));
+                        profile.setOwnedPotions(ownedPotions);
+                    }
+
+                    Log.d("EquipmentRepo", "🔥 Potrošeno " + consumedPotionIds.size() + " ONETIME potions: " + consumedPotionIds);
+                    Log.d("EquipmentRepo", "💾 Saving profile to Firestore...");
+
+                    // Sačuvaj profil JEDNOM
+                    db.collection(USERS_COLLECTION)
+                            .document(userId)
+                            .collection(PROFILE_SUBCOLLECTION)
+                            .document(userId)
+                            .set(profile)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("EquipmentRepo", "✅ Profile saved - pozivam SUCCESS callback");
+                                if (callback != null) {
+                                    callback.onSuccess();
+                                } else {
+                                    Log.e("EquipmentRepo", "❌ Callback je NULL!");
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("EquipmentRepo", "❌ Greška pri čuvanju profila", e);
+                                if (callback != null) {
+                                    callback.onFailure(e);
+                                } else {
+                                    Log.e("EquipmentRepo", "❌ Callback je NULL!");
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("EquipmentRepo", "❌ Greška pri učitavanju profila iz Firestore", e);
+                    if (callback != null) {
+                        callback.onFailure(e);
+                    } else {
+                        Log.e("EquipmentRepo", "❌ Callback je NULL!");
+                    }
+                });
+    }
+
+    // ✅ Unapredi weapon u ownedWeapons
     public void upgradeWeapon(String userId, Weapon weapon, int newCoinBalance) {
         weapon.upgrade();
 
@@ -190,9 +366,9 @@ public class EquipmentRepository {
                     if (!snapshot.exists()) return;
 
                     UserProfile profile = snapshot.toObject(UserProfile.class);
-                    if (profile == null || profile.getOwnedEquipment() == null) return;
+                    if (profile == null || profile.getOwnedWeapons() == null) return;
 
-                    List<Equipment> owned = profile.getOwnedEquipment();
+                    List<Weapon> owned = profile.getOwnedWeapons();
                     for (int i = 0; i < owned.size(); i++) {
                         if (owned.get(i).getId().equals(weapon.getId())) {
                             owned.set(i, weapon);
@@ -200,7 +376,7 @@ public class EquipmentRepository {
                         }
                     }
 
-                    profile.setOwnedEquipment(owned);
+                    profile.setOwnedWeapons(owned);
                     profile.setCoins(newCoinBalance);
 
                     db.collection(USERS_COLLECTION)
@@ -224,17 +400,17 @@ public class EquipmentRepository {
                     if (!snapshot.exists()) return;
 
                     UserProfile profile = snapshot.toObject(UserProfile.class);
-                    if (profile == null || profile.getOwnedEquipment() == null) return;
+                    if (profile == null || profile.getOwnedWeapons() == null) return;
 
-                    List<Equipment> owned = profile.getOwnedEquipment();
-                    for (Equipment eq : owned) {
-                        if (eq.getId().equals(weaponId) && eq instanceof Weapon) {
-                            ((Weapon) eq).addDuplicate();
+                    List<Weapon> owned = profile.getOwnedWeapons();
+                    for (Weapon weapon : owned) {
+                        if (weapon.getId().equals(weaponId)) {
+                            weapon.addDuplicate();
                             break;
                         }
                     }
 
-                    profile.setOwnedEquipment(owned);
+                    profile.setOwnedWeapons(owned);
 
                     db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -246,7 +422,10 @@ public class EquipmentRepository {
                 });
     }
 
-    // ✅ Deaktiviraj opremu (ukloni iz activeEquipment)
+    // ✅ Deaktiviraj opremu → samo ukloni iz active liste (BRIŠE SE ZAUVEK!)
+    // Napomena: Ova metoda se ne koristi u UI - nema ručne deaktivacije!
+    // Oprema se briše automatski nakon što se potroši (clothing nakon 2 borbe, ONETIME potions nakon 1 borbe)
+    @Deprecated
     public void deactivateEquipment(String userId, String equipmentId) {
         db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -257,23 +436,43 @@ public class EquipmentRepository {
                     if (!snapshot.exists()) return;
 
                     UserProfile profile = snapshot.toObject(UserProfile.class);
-                    if (profile == null || profile.getActiveEquipment() == null) return;
+                    if (profile == null) return;
 
-                    List<Equipment> active = profile.getActiveEquipment();
-                    active.removeIf(eq -> eq.getId().equals(equipmentId));
-                    profile.setActiveEquipment(active);
+                    // BRIŠI opremu iz active liste (ne vraća se u owned!)
+                    List<com.example.teamgame28.model.Potion> activePotions = profile.getActivePotions();
+                    if (activePotions != null) {
+                        activePotions.removeIf(eq -> eq.getId().equals(equipmentId));
+                        profile.setActivePotions(activePotions);
+                    }
 
+                    List<Clothing> activeClothing = profile.getActiveClothing();
+                    if (activeClothing != null) {
+                        activeClothing.removeIf(eq -> eq.getId().equals(equipmentId));
+                        profile.setActiveClothing(activeClothing);
+                    }
+
+                    List<Weapon> activeWeapons = profile.getActiveWeapons();
+                    if (activeWeapons != null) {
+                        activeWeapons.removeIf(eq -> eq.getId().equals(equipmentId));
+                        profile.setActiveWeapons(activeWeapons);
+                    }
+
+                    Log.d("EquipmentRepo", "🗑️ Oprema deaktivirana i OBRISANA ZAUVEK: " + equipmentId);
+
+                    // Sačuvaj izmene u Firestore
                     db.collection(USERS_COLLECTION)
-                .document(userId)
-                .collection(PROFILE_SUBCOLLECTION)
+                            .document(userId)
+                            .collection(PROFILE_SUBCOLLECTION)
                             .document(userId)
                             .set(profile)
                             .addOnSuccessListener(aVoid ->
-                                    Log.d("EquipmentRepo", "✅ Oprema deaktivirana: " + equipmentId));
+                                    Log.d("EquipmentRepo", "✅ Oprema obrisana i profil ažuriran"))
+                            .addOnFailureListener(e ->
+                                    Log.e("EquipmentRepo", "❌ Greška pri brisanju opreme", e));
                 });
     }
 
-    // ✅ Smanji trajanje clothing-a za 1 borbu
+    // ✅ Smanji trajanje clothing-a za 1 borbu. Istekli clothing se BRIŠE ZAUVEK!
     public void decreaseClothingDuration(String userId) {
         db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -284,31 +483,33 @@ public class EquipmentRepository {
                     if (!snapshot.exists()) return;
 
                     UserProfile profile = snapshot.toObject(UserProfile.class);
-                    if (profile == null || profile.getActiveEquipment() == null) return;
+                    if (profile == null || profile.getActiveClothing() == null) return;
 
-                    List<Equipment> active = profile.getActiveEquipment();
-                    List<Equipment> toRemove = new ArrayList<>();
+                    List<Clothing> active = profile.getActiveClothing();
+                    List<Clothing> toRemove = new ArrayList<>();
 
-                    for (Equipment eq : active) {
-                        if (eq instanceof Clothing) {
-                            Clothing clothing = (Clothing) eq;
-                            clothing.decreaseBattleDuration();
-                            if (!clothing.isActive()) {
-                                toRemove.add(eq);
-                            }
+                    for (Clothing clothing : active) {
+                        clothing.decreaseBattleDuration();
+                        if (!clothing.isActive()) {
+                            toRemove.add(clothing);
+                            Log.d("EquipmentRepo", "🗑️ Clothing istekao i OBRISAN ZAUVEK: " + clothing.getName());
                         }
                     }
 
+                    // Ukloni isteklu odeću iz active liste (BRIŠE SE ZAUVEK!)
                     active.removeAll(toRemove);
-                    profile.setActiveEquipment(active);
+                    profile.setActiveClothing(active);
 
+                    // Sačuvaj izmene u Firestore
                     db.collection(USERS_COLLECTION)
-                .document(userId)
-                .collection(PROFILE_SUBCOLLECTION)
+                            .document(userId)
+                            .collection(PROFILE_SUBCOLLECTION)
                             .document(userId)
                             .set(profile)
                             .addOnSuccessListener(aVoid ->
-                                    Log.d("EquipmentRepo", "✅ Clothing trajanje smanjeno"));
+                                    Log.d("EquipmentRepo", "✅ Clothing trajanje smanjeno i profil ažuriran"))
+                            .addOnFailureListener(e ->
+                                    Log.e("EquipmentRepo", "❌ Greška pri smanjenju clothing duration-a", e));
                 });
     }
 
@@ -347,23 +548,27 @@ public class EquipmentRepository {
                     UserProfile profile = snapshot.toObject(UserProfile.class);
                     if (profile == null) return;
 
-                    // Povećaj bazni PP
-                    int currentPP = profile.getPowerPoints();
-                    int boost = (int) (currentPP * ppBoostPercent);
-                    int newPP = currentPP + boost;
-                    profile.setPowerPoints(newPP);
+                    // Povećaj bazni PP na osnovu level-based PP, ne trenutnog powerPoints
+                    // Zato što powerPoints možda počinje od 0
+                    int userLevel = com.example.teamgame28.service.LevelingService.calculateLevelFromXp(profile.getXp());
+                    int levelBasedPP = com.example.teamgame28.service.LevelingService.getTotalPpForLevel(userLevel);
 
-                    // Označi napitak kao potrošen u ownedEquipment
-                    List<Equipment> owned = profile.getOwnedEquipment();
+                    int currentBoost = profile.getPowerPoints(); // Trenutni trajni boost
+                    int additionalBoost = (int) (levelBasedPP * ppBoostPercent);
+                    int newTotalBoost = currentBoost + additionalBoost;
+                    profile.setPowerPoints(newTotalBoost);
+
+                    // Označi napitak kao potrošen u ownedPotions
+                    List<com.example.teamgame28.model.Potion> owned = profile.getOwnedPotions();
                     if (owned != null) {
-                        for (Equipment eq : owned) {
-                            if (eq.getId().equals(potionId) && eq instanceof com.example.teamgame28.model.Potion) {
-                                ((com.example.teamgame28.model.Potion) eq).setConsumed(true);
-                                Log.d("EquipmentRepo", "✅ PERMANENT napitak označen kao consumed: " + eq.getName());
+                        for (com.example.teamgame28.model.Potion potion : owned) {
+                            if (potion.getId().equals(potionId)) {
+                                potion.setConsumed(true);
+                                Log.d("EquipmentRepo", "✅ PERMANENT napitak označen kao consumed: " + potion.getName());
                                 break;
                             }
                         }
-                        profile.setOwnedEquipment(owned);
+                        profile.setOwnedPotions(owned);
                     }
 
                     db.collection(USERS_COLLECTION)
@@ -373,7 +578,8 @@ public class EquipmentRepository {
                             .set(profile)
                             .addOnSuccessListener(aVoid ->
                                     Log.d("EquipmentRepo", "✅ PERMANENT boost primenjen: " +
-                                          currentPP + " → " + newPP + " PP"))
+                                          "+" + additionalBoost + " PP (od level-based " + levelBasedPP +
+                                          "), total boost: " + currentBoost + " → " + newTotalBoost))
                             .addOnFailureListener(e ->
                                     Log.e("EquipmentRepo", "❌ Greška pri trajnom boostu", e));
                 });
@@ -382,6 +588,11 @@ public class EquipmentRepository {
     // Callback interface
     public interface UserProfileCallback {
         void onSuccess(UserProfile profile);
+        void onFailure(Exception e);
+    }
+
+    public interface PostBattleCallback {
+        void onSuccess();
         void onFailure(Exception e);
     }
 }

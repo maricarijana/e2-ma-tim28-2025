@@ -250,11 +250,18 @@ public class EquipmentViewModel extends AndroidViewModel {
         String userId = getCurrentUserId();
         if (userId == null) return;
 
-        List<Equipment> currentActive = activeEquipment.getValue();
-        if (currentActive == null || currentActive.isEmpty()) return;
+        equipmentService.processPostBattle(userId, new EquipmentService.PostBattleCallback() {
+            @Override
+            public void onSuccess() {
+                loadActiveEquipment(userId); // Osvježi aktivnu opremu
+            }
 
-        equipmentService.processPostBattle(userId, currentActive);
-        loadActiveEquipment(userId); // Osvježi aktivnu opremu
+            @Override
+            public void onFailure(Exception e) {
+                android.util.Log.e("EquipmentViewModel", "❌ Greška pri post-battle obradi", e);
+                loadActiveEquipment(userId); // Ipak osvježi opremu
+            }
+        });
     }
 
     // ========== PRIMENA EFEKATA ==========

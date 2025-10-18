@@ -16,19 +16,28 @@ public class UserProfile implements Serializable {
     private String currentEquipment;
 
     // Privatno vidljivi podaci (samo vlasniku)
+    // VAŽNO: powerPoints je TRAJNI BOOST od PERMANENT potions, ne bazni PP!
+    // Bazni PP se računa iz nivoa (LevelingService.getTotalPpForLevel(level))
+    // Ukupan PP = bazni PP (iz nivoa) + powerPoints (trajni boost)
     private int powerPoints;
     private int coins;
     private List<String> badges;
-   //zameniti ovo sa pravom listom equipmenta
-    private List<String> equipment;
 
-    private List<Equipment> ownedEquipment;  // sva oprema koju korisnik poseduje
-    private List<Equipment> activeEquipment; // trenutno aktivna oprema (max 1 potion, više armora i oružja)
+    // VAŽNO: Firestore ne može deserijalizovati List<Equipment> jer je Equipment abstract!
+    // Zato delimo liste po konkretnim tipovima:
+    private List<Potion> ownedPotions;
+    private List<Clothing> ownedClothing;
+    private List<Weapon> ownedWeapons;
+
+    private List<Potion> activePotions;
+    private List<Clothing> activeClothing;
+    private List<Weapon> activeWeapons;
 
 
     // Statistika
     private int activeDays; // Broj dana aktivnog korišćenja (streak)
     private long lastLoginTime; // Poslednji login timestamp
+    private long currentLevelStartTimestamp; // Timestamp kada je korisnik dostigao trenutni nivo (za etape)
     private Map<String, Integer> xpHistory; // XP po danima (key: datum u formatu "yyyy-MM-dd", value: XP)
 
     public UserProfile() {
@@ -38,13 +47,17 @@ public class UserProfile implements Serializable {
         this.powerPoints = 0;
         this.coins = 0;
         this.badges = new ArrayList<>();
-        this.equipment = new ArrayList<>();
         this.currentEquipment = "";
         this.qrCode = "";
         this.activeDays = 0;
         this.lastLoginTime = 0;
-        this.ownedEquipment = new ArrayList<>();
-        this.activeEquipment = new ArrayList<>();
+        this.currentLevelStartTimestamp = System.currentTimeMillis(); // Početak etape
+        this.ownedPotions = new ArrayList<>();
+        this.ownedClothing = new ArrayList<>();
+        this.ownedWeapons = new ArrayList<>();
+        this.activePotions = new ArrayList<>();
+        this.activeClothing = new ArrayList<>();
+        this.activeWeapons = new ArrayList<>();
         this.xpHistory = new HashMap<>();
     }
 
@@ -73,31 +86,53 @@ public class UserProfile implements Serializable {
     public List<String> getBadges() { return badges; }
     public void setBadges(List<String> badges) { this.badges = badges; }
 
-    public List<String> getEquipment() { return equipment; }
-    public void setEquipment(List<String> equipment) { this.equipment = equipment; }
-
     public int getActiveDays() { return activeDays; }
     public void setActiveDays(int activeDays) { this.activeDays = activeDays; }
 
     public long getLastLoginTime() { return lastLoginTime; }
     public void setLastLoginTime(long lastLoginTime) { this.lastLoginTime = lastLoginTime; }
 
+    public long getCurrentLevelStartTimestamp() { return currentLevelStartTimestamp; }
+    public void setCurrentLevelStartTimestamp(long currentLevelStartTimestamp) { this.currentLevelStartTimestamp = currentLevelStartTimestamp; }
+
     public Map<String, Integer> getXpHistory() { return xpHistory; }
     public void setXpHistory(Map<String, Integer> xpHistory) { this.xpHistory = xpHistory; }
+
+    // Getteri/setteri za owned equipment
+    public List<Potion> getOwnedPotions() { return ownedPotions; }
+    public void setOwnedPotions(List<Potion> ownedPotions) { this.ownedPotions = ownedPotions; }
+
+    public List<Clothing> getOwnedClothing() { return ownedClothing; }
+    public void setOwnedClothing(List<Clothing> ownedClothing) { this.ownedClothing = ownedClothing; }
+
+    public List<Weapon> getOwnedWeapons() { return ownedWeapons; }
+    public void setOwnedWeapons(List<Weapon> ownedWeapons) { this.ownedWeapons = ownedWeapons; }
+
+    // Getteri/setteri za active equipment
+    public List<Potion> getActivePotions() { return activePotions; }
+    public void setActivePotions(List<Potion> activePotions) { this.activePotions = activePotions; }
+
+    public List<Clothing> getActiveClothing() { return activeClothing; }
+    public void setActiveClothing(List<Clothing> activeClothing) { this.activeClothing = activeClothing; }
+
+    public List<Weapon> getActiveWeapons() { return activeWeapons; }
+    public void setActiveWeapons(List<Weapon> activeWeapons) { this.activeWeapons = activeWeapons; }
+
+    // Helper metode za dobijanje svih equipment kao jedne liste (za kompatibilnost)
     public List<Equipment> getOwnedEquipment() {
-        return ownedEquipment;
+        List<Equipment> all = new ArrayList<>();
+        if (ownedPotions != null) all.addAll(ownedPotions);
+        if (ownedClothing != null) all.addAll(ownedClothing);
+        if (ownedWeapons != null) all.addAll(ownedWeapons);
+        return all;
     }
 
     public List<Equipment> getActiveEquipment() {
-        return activeEquipment;
-    }
-
-    public void setOwnedEquipment(List<Equipment> ownedEquipment) {
-        this.ownedEquipment = ownedEquipment;
-    }
-
-    public void setActiveEquipment(List<Equipment> activeEquipment) {
-        this.activeEquipment = activeEquipment;
+        List<Equipment> all = new ArrayList<>();
+        if (activePotions != null) all.addAll(activePotions);
+        if (activeClothing != null) all.addAll(activeClothing);
+        if (activeWeapons != null) all.addAll(activeWeapons);
+        return all;
     }
 
     public void addCoins(int amount) {
@@ -107,12 +142,6 @@ public class UserProfile implements Serializable {
     public void addBadge(String badge) {
         if (!this.badges.contains(badge)) {
             this.badges.add(badge);
-        }
-    }
-
-    public void addEquipment(String item) {
-        if (!this.equipment.contains(item)) {
-            this.equipment.add(item);
         }
     }
 

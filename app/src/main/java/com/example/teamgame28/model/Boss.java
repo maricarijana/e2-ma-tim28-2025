@@ -2,7 +2,7 @@ package com.example.teamgame28.model;
 
 public class Boss {
 
-    private Integer id;
+    private String id;  // Firestore document ID
     private Integer hp;
 
     private String userId;
@@ -27,7 +27,7 @@ public class Boss {
     public Boss() {
     }
 
-    public Boss(Integer id, Integer hp, String userId, Integer currentHP, Boolean isDefeated, Integer bossLevel, Integer coinsReward, double coinsRewardPercent, boolean attemptedThisLevel) {
+    public Boss(String id, Integer hp, String userId, Integer currentHP, Boolean isDefeated, Integer bossLevel, Integer coinsReward, double coinsRewardPercent, boolean attemptedThisLevel) {
         this.id = id;
         this.hp = hp;
         this.userId = userId;
@@ -47,11 +47,11 @@ public class Boss {
         this.hp = hp;
     }
 
-    public Integer getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 

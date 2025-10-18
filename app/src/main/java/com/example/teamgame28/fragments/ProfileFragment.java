@@ -209,11 +209,15 @@ public class ProfileFragment extends Fragment {
                 profileBadges.setText("Nema bedževa");
             }
 
-            // Oprema
-            if (userProfile.getEquipment() != null && !userProfile.getEquipment().isEmpty()) {
+            // Oprema (posedovana)
+            if (userProfile.getOwnedEquipment() != null && !userProfile.getOwnedEquipment().isEmpty()) {
                 StringBuilder equipmentText = new StringBuilder();
-                for (String item : userProfile.getEquipment()) {
-                    equipmentText.append("• ").append(item).append("\n");
+                for (com.example.teamgame28.model.Equipment eq : userProfile.getOwnedEquipment()) {
+                    equipmentText.append("• ").append(eq.getName());
+                    if (eq.isActive()) {
+                        equipmentText.append(" (ACTIVE)");
+                    }
+                    equipmentText.append("\n");
                 }
                 profileEquipment.setText(equipmentText.toString().trim());
             } else {

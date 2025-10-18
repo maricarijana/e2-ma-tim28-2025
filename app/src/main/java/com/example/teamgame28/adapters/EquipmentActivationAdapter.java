@@ -34,6 +34,7 @@ public class EquipmentActivationAdapter extends RecyclerView.Adapter<EquipmentAc
     public interface OnEquipmentActionListener {
         void onActivateClick(Equipment equipment);
         void onDeactivateClick(Equipment equipment);
+        void onUpgradeClick(Weapon weapon);
     }
 
     public EquipmentActivationAdapter(OnEquipmentActionListener listener, boolean isActiveList) {
@@ -73,6 +74,7 @@ public class EquipmentActivationAdapter extends RecyclerView.Adapter<EquipmentAc
         private final TextView detailsTextView;
         private final TextView statusTextView;
         private final Button actionButton;
+        private final Button upgradeButton;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -81,6 +83,9 @@ public class EquipmentActivationAdapter extends RecyclerView.Adapter<EquipmentAc
             detailsTextView = itemView.findViewById(R.id.equipment_details);
             statusTextView = itemView.findViewById(R.id.equipment_status);
             actionButton = itemView.findViewById(R.id.btn_action);
+
+            // Upgrade dugme (opciono, može biti null ako ne postoji u layoutu)
+            upgradeButton = itemView.findViewById(R.id.btn_upgrade);
         }
 
         public void bind(Equipment equipment, OnEquipmentActionListener listener, boolean isActiveList) {
@@ -113,14 +118,13 @@ public class EquipmentActivationAdapter extends RecyclerView.Adapter<EquipmentAc
                     }
                 }
 
-                // Dugme "Deactivate"
-                actionButton.setText("Deaktiviraj");
-                actionButton.setBackgroundColor(Color.parseColor("#F44336")); // crveno
-                actionButton.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onDeactivateClick(equipment);
-                    }
-                });
+                // NEMA ručne deaktivacije - oprema se automatski troši nakon borbe
+                actionButton.setVisibility(View.GONE);
+
+                // Sakrij upgrade dugme na aktivnoj listi
+                if (upgradeButton != null) {
+                    upgradeButton.setVisibility(View.GONE);
+                }
             } else {
                 // Neaktivna oprema
                 statusTextView.setVisibility(View.GONE);
@@ -147,6 +151,23 @@ public class EquipmentActivationAdapter extends RecyclerView.Adapter<EquipmentAc
                         listener.onActivateClick(equipment);
                     }
                 });
+
+                // Dugme "Upgrade" za oružje (samo u neaktivnoj listi)
+                if (upgradeButton != null) {
+                    if (equipment instanceof Weapon) {
+                        Weapon weapon = (Weapon) equipment;
+                        upgradeButton.setVisibility(View.VISIBLE);
+                        upgradeButton.setText("Upgrade");
+                        upgradeButton.setBackgroundColor(Color.parseColor("#FF9800")); // narandžasto
+                        upgradeButton.setOnClickListener(v -> {
+                            if (listener != null) {
+                                listener.onUpgradeClick(weapon);
+                            }
+                        });
+                    } else {
+                        upgradeButton.setVisibility(View.GONE);
+                    }
+                }
             }
         }
 
@@ -183,8 +204,13 @@ public class EquipmentActivationAdapter extends RecyclerView.Adapter<EquipmentAc
                 if (weapon.getCoinBoostPercent() > 0) {
                     sb.append(" | +").append((int) (weapon.getCoinBoostPercent() * 100)).append("% Coins");
                 }
+
+                // Probability (verovatnoća)
+                sb.append(" | Probability: ").append(String.format("%.1f", weapon.getProbability() * 100)).append("%");
+
+                // Upgrade level
                 if (weapon.getUpgradeLevel() > 0) {
-                    sb.append(" | Upgrade Level: ").append(weapon.getUpgradeLevel());
+                    sb.append(" | Level: ").append(weapon.getUpgradeLevel());
                 }
             }
 
