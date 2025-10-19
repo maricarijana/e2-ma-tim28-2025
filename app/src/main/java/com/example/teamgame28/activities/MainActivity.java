@@ -16,11 +16,17 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.teamgame28.R;
 import com.example.teamgame28.fragments.CategoryManagementFragment;
+import com.example.teamgame28.fragments.EquipmentActivationFragment;
 import com.example.teamgame28.fragments.ProfileFragment;
+import com.example.teamgame28.fragments.ShopFragment;
 import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
+import com.example.teamgame28.model.BattleData;
 import com.example.teamgame28.model.User;
+import com.example.teamgame28.repository.BossRepository;
 import com.example.teamgame28.repository.UserRepository;
+import com.example.teamgame28.service.BattleService;
+import com.example.teamgame28.service.BossService;
 import com.example.teamgame28.service.UserService;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -32,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private UserRepository userRepository;
+    private BattleService battleService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
         userRepository = new UserRepository();
+        battleService = new BattleService(new BossService(new BossRepository()), this);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
@@ -86,7 +94,21 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.fragment_container, new CategoryManagementFragment())
                         .commit();
             } else if (itemId == R.id.nav_boss_battle) {
-                startBossBattle();
+                // Otvori EquipmentActivationFragment PRE borbe
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new EquipmentActivationFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_shop) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new ShopFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_equipment) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new EquipmentActivationFragment())
+                        .commit();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()
                         .beginTransaction()
@@ -155,14 +177,38 @@ public class MainActivity extends AppCompatActivity {
 
     // 🔹 Pokreni Boss Battle
     private void startBossBattle() {
-        Intent intent = new Intent(this, BattleActivity.class);
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "Greška: korisnik nije prijavljen", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        // Hardcoded vrednosti za testiranje
-        intent.putExtra("BOSS_LEVEL", 1);
-        intent.putExtra("PLAYER_PP", 50);
-        intent.putExtra("SUCCESS_RATE", 67.0);
+        String userId = currentUser.getUid();
 
-        startActivity(intent);
+        // Koristi BattleService da pripremi sve podatke za borbu
+        battleService.prepareBattleData(userId, new BattleService.PrepareBattleCallback() {
+            @Override
+            public void onSuccess(BattleData battleData) {
+                // Pokreni BattleActivity sa pripremljenim podacima
+                Intent intent = new Intent(MainActivity.this, BattleActivity.class);
+                intent.putExtra("BOSS_ID", battleData.getBossId());  // Boss ID iz Firestore
+                intent.putExtra("BOSS_LEVEL", battleData.getBossLevel());
+                intent.putExtra("BOSS_HP", battleData.getBossHP());
+                intent.putExtra("BOSS_CURRENT_HP", battleData.getBossCurrentHP());
+                intent.putExtra("BOSS_COINS_REWARD", battleData.getBossCoinsReward());
+                intent.putExtra("IS_EXISTING_BOSS", battleData.isExistingBoss());
+                intent.putExtra("PLAYER_PP", battleData.getTotalPP());
+                intent.putExtra("SUCCESS_RATE", battleData.getSuccessRate());
+                intent.putExtra("TOTAL_ATTACKS", battleData.getTotalAttacks());
+                intent.putExtra("ACTIVE_EQUIPMENT", battleData.getActiveEquipmentNames());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     // 🔹 Logout funkcija

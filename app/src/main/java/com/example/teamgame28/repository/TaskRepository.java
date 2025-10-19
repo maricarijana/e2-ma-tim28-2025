@@ -301,6 +301,55 @@ public class TaskRepository {
     }
 
 
+    /**
+     * Računa success rate za zadatke u trenutnoj etapi (od currentLevelStartTimestamp).
+     * Automatski isključuje pauzirane, otkazane i zadatke preko kvote (xpCounted = false).
+     */
+    public void getSuccessRateForCurrentStage(String userId, long currentLevelStartTimestamp, SuccessRateCallback callback) {
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("creationTimestamp", currentLevelStartTimestamp)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Task> validTasks = new ArrayList<>();
+                    int finishedCount = 0;
+
+                    for (QueryDocumentSnapshot document : querySnapshot) {
+                        Task task = document.toObject(Task.class);
+
+                        // Isključi zadatke preko kvote, pauzirane i otkazane (xpCounted = false)
+                        if (!task.isXpCounted()) {
+                            continue;
+                        }
+
+                        validTasks.add(task);
+
+                        if (task.getStatus() == TaskStatus.FINISHED) {
+                            finishedCount++;
+                        }
+                    }
+
+                    // Izračunaj success rate
+                    double successRate;
+                    if (validTasks.isEmpty()) {
+                        successRate = 67.0; // Default ako nema zadataka u etapi
+                    } else {
+                        successRate = ((double) finishedCount / validTasks.size()) * 100.0;
+                    }
+
+                    Log.d("TaskRepository", "📊 Stage success rate: " + finishedCount + "/" + validTasks.size() + " = " + successRate + "%");
+                    callback.onSuccess(successRate);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("TaskRepository", "❌ Error calculating success rate", e);
+                    callback.onSuccess(67.0); // Default u slučaju greške
+                });
+    }
+
+    public interface SuccessRateCallback {
+        void onSuccess(double successRate);
+    }
+
     public void deleteFutureRecurringTasks(Task task) {
         if (task.getRecurringGroupId() == null) {
             // Ako zadatak nema groupId (tj. nije deo grupe ponavljanja) — briši samo njega

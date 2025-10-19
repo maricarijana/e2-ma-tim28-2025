@@ -74,9 +74,15 @@ public class UserRepository {
         profilePayload.put("powerPoints", userProfile.getPowerPoints());
         profilePayload.put("coins", userProfile.getCoins());
         profilePayload.put("badges", userProfile.getBadges());
-        profilePayload.put("equipment", userProfile.getEquipment());
+        profilePayload.put("ownedPotions", userProfile.getOwnedPotions());
+        profilePayload.put("ownedClothing", userProfile.getOwnedClothing());
+        profilePayload.put("ownedWeapons", userProfile.getOwnedWeapons());
+        profilePayload.put("activePotions", userProfile.getActivePotions());
+        profilePayload.put("activeClothing", userProfile.getActiveClothing());
+        profilePayload.put("activeWeapons", userProfile.getActiveWeapons());
         profilePayload.put("activeDays", userProfile.getActiveDays());
         profilePayload.put("lastLoginTime", userProfile.getLastLoginTime());
+        profilePayload.put("currentLevelStartTimestamp", userProfile.getCurrentLevelStartTimestamp());
         profilePayload.put("xpHistory", userProfile.getXpHistory());
 
         // Prvo snimi osnovne User podatke
@@ -192,9 +198,15 @@ public class UserRepository {
                         profilePayload.put("powerPoints", defaultProfile.getPowerPoints());
                         profilePayload.put("coins", defaultProfile.getCoins());
                         profilePayload.put("badges", defaultProfile.getBadges());
-                        profilePayload.put("equipment", defaultProfile.getEquipment());
+                        profilePayload.put("ownedPotions", defaultProfile.getOwnedPotions());
+                        profilePayload.put("ownedClothing", defaultProfile.getOwnedClothing());
+                        profilePayload.put("ownedWeapons", defaultProfile.getOwnedWeapons());
+                        profilePayload.put("activePotions", defaultProfile.getActivePotions());
+                        profilePayload.put("activeClothing", defaultProfile.getActiveClothing());
+                        profilePayload.put("activeWeapons", defaultProfile.getActiveWeapons());
                         profilePayload.put("activeDays", defaultProfile.getActiveDays());
                         profilePayload.put("lastLoginTime", defaultProfile.getLastLoginTime());
+                        profilePayload.put("currentLevelStartTimestamp", defaultProfile.getCurrentLevelStartTimestamp());
                         profilePayload.put("xpHistory", defaultProfile.getXpHistory());
 
                         firestore.collection(USERS_COLLECTION)
@@ -249,9 +261,15 @@ public class UserRepository {
         profilePayload.put("powerPoints", userProfile.getPowerPoints());
         profilePayload.put("coins", userProfile.getCoins());
         profilePayload.put("badges", userProfile.getBadges());
-        profilePayload.put("equipment", userProfile.getEquipment());
+        profilePayload.put("ownedPotions", userProfile.getOwnedPotions());
+        profilePayload.put("ownedClothing", userProfile.getOwnedClothing());
+        profilePayload.put("ownedWeapons", userProfile.getOwnedWeapons());
+        profilePayload.put("activePotions", userProfile.getActivePotions());
+        profilePayload.put("activeClothing", userProfile.getActiveClothing());
+        profilePayload.put("activeWeapons", userProfile.getActiveWeapons());
         profilePayload.put("activeDays", userProfile.getActiveDays());
         profilePayload.put("lastLoginTime", userProfile.getLastLoginTime());
+        profilePayload.put("currentLevelStartTimestamp", userProfile.getCurrentLevelStartTimestamp());
         profilePayload.put("xpHistory", userProfile.getXpHistory());
 
         return firestore.collection(USERS_COLLECTION)
@@ -313,7 +331,7 @@ public class UserRepository {
                 Log.e("XP_SYSTEM", "❌ Greška u transakciji za XP: ", e)
         );
     }
-    public void addCoinsToUser(String userId, int coinsToAdd) {
+    public void addCoinsToUser(String userId, int coinsToAdd, CoinsCallback callback) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         DocumentReference profileRef = db
@@ -323,10 +341,24 @@ public class UserRepository {
                 .document(userId);
 
         profileRef.update("coins", FieldValue.increment(coinsToAdd))
-                .addOnSuccessListener(aVoid ->
-                        Log.d("UserRepo", "✅ Coins added successfully to profile"))
-                .addOnFailureListener(e ->
-                        Log.e("UserRepo", "❌ Failed to add coins", e));
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("UserRepo", "✅ Coins added successfully: +" + coinsToAdd);
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("UserRepo", "❌ Failed to add coins", e);
+                    if (callback != null) callback.onFailure(e);
+                });
+    }
+
+    // Overload za backward compatibility
+    public void addCoinsToUser(String userId, int coinsToAdd) {
+        addCoinsToUser(userId, coinsToAdd, null);
+    }
+
+    public interface CoinsCallback {
+        void onSuccess();
+        void onFailure(Exception e);
     }
 
     public void addEquipmentToUser(String userId, String newEquipment) {

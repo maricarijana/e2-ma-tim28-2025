@@ -172,12 +172,31 @@ public class CreateTaskFragment extends Fragment {
         userRepository.getUserProfileById(currentUserId, new UserRepository.UserProfileCallback() {
             @Override
             public void onSuccess(com.example.teamgame28.model.UserProfile userProfile) {
-                userLevel = userProfile.getLevel();
+                int correctLevel = com.example.teamgame28.service.LevelingService.calculateLevelFromXp(userProfile.getXp());
+
+                // 🔧 AUTOMATSKO POPRAVLJANJE: Ako level u bazi ne odgovara XP-u, popravi ga!
+                if (userProfile.getLevel() != correctLevel) {
+                    android.util.Log.w("CreateTaskFragment", "⚠️ NESINHRONIZAN LEVEL! Baza: " + userProfile.getLevel() +
+                            ", XP: " + userProfile.getXp() +
+                            ", Trebalo bi: " + correctLevel + " - POPRAVLJAM...");
+
+                    userProfile.setLevel(correctLevel);
+                    userProfile.updateTitle();
+                    userRepository.updateUserProfile(currentUserId, userProfile)
+                            .addOnSuccessListener(aVoid ->
+                                android.util.Log.d("CreateTaskFragment", "✅ Level popravljen u bazi: " + correctLevel))
+                            .addOnFailureListener(e ->
+                                android.util.Log.e("CreateTaskFragment", "❌ Greška pri popravljanju levela: " + e.getMessage()));
+                }
+
+                userLevel = correctLevel;
+                android.util.Log.d("CreateTaskFragment", "🔍 Učitan userLevel: " + userLevel + ", XP: " + userProfile.getXp());
                 setupSpinners();
             }
 
             @Override
             public void onFailure(Exception e) {
+                android.util.Log.e("CreateTaskFragment", "❌ Greška pri učitavanju profila: " + e.getMessage());
                 userLevel = 0; // Fallback na level 0
                 setupSpinners();
             }

@@ -2,7 +2,7 @@ package com.example.teamgame28.model;
 
 public class Boss {
 
-    private Integer id;
+    private String id;  // Firestore document ID
     private Integer hp;
 
     private String userId;
@@ -16,7 +16,8 @@ public class Boss {
     private Integer coinsReward;
     private double coinsRewardPercent;
 
-    private boolean attemptedThisLevel;
+    private boolean attemptedThisLevel;  // DEPRECATED - koristiti lastAttemptedUserLevel
+    private int lastAttemptedUserLevel;   // Nivo korisnika kada je poslednji put pokušao da se bori
 
     public Boss(Integer HP) {
 
@@ -27,7 +28,7 @@ public class Boss {
     public Boss() {
     }
 
-    public Boss(Integer id, Integer hp, String userId, Integer currentHP, Boolean isDefeated, Integer bossLevel, Integer coinsReward, double coinsRewardPercent, boolean attemptedThisLevel) {
+    public Boss(String id, Integer hp, String userId, Integer currentHP, Boolean isDefeated, Integer bossLevel, Integer coinsReward, double coinsRewardPercent, boolean attemptedThisLevel) {
         this.id = id;
         this.hp = hp;
         this.userId = userId;
@@ -47,11 +48,11 @@ public class Boss {
         this.hp = hp;
     }
 
-    public Integer getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -109,6 +110,14 @@ public class Boss {
 
     public void setAttemptedThisLevel(boolean attemptedThisLevel) {
         this.attemptedThisLevel = attemptedThisLevel;
+    }
+
+    public int getLastAttemptedUserLevel() {
+        return lastAttemptedUserLevel;
+    }
+
+    public void setLastAttemptedUserLevel(int lastAttemptedUserLevel) {
+        this.lastAttemptedUserLevel = lastAttemptedUserLevel;
     }
 
     @Override

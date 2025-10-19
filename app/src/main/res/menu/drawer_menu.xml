@@ -17,6 +17,14 @@
             android:icon="@android:drawable/ic_menu_close_clear_cancel"
             android:title="Boss Battle" />
         <item
+            android:id="@+id/nav_shop"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="Prodavnica" />
+        <item
+            android:id="@+id/nav_equipment"
+            android:icon="@android:drawable/ic_menu_manage"
+            android:title="Moja Oprema" />
+        <item
             android:id="@+id/nav_profile"
             android:icon="@android:drawable/ic_menu_myplaces"
             android:title="Profil" />

@@ -41,6 +41,9 @@ public class RewardActivity extends AppCompatActivity implements SensorEventList
     private boolean isWeapon;
     private boolean bossDefeated;
     private boolean chestOpened = false;
+    private String equipmentId;
+    private String equipmentName;
+    private int equipmentImageResId;
 
     // Sensor for shake detection
     private SensorManager sensorManager;
@@ -92,6 +95,16 @@ public class RewardActivity extends AppCompatActivity implements SensorEventList
         equipmentDropped = intent.getBooleanExtra("EQUIPMENT_DROPPED", false);
         isWeapon = intent.getBooleanExtra("IS_WEAPON", false);
         bossDefeated = intent.getBooleanExtra("BOSS_DEFEATED", false);
+        equipmentId = intent.getStringExtra("EQUIPMENT_ID");
+        equipmentName = intent.getStringExtra("EQUIPMENT_NAME");
+        equipmentImageResId = intent.getIntExtra("EQUIPMENT_IMAGE_RES_ID", 0);
+
+        android.util.Log.d("RewardActivity", "========== REWARD ACTIVITY STARTED ==========");
+        android.util.Log.d("RewardActivity", "Coins earned: " + coinsEarned);
+        android.util.Log.d("RewardActivity", "Equipment dropped: " + equipmentDropped);
+        android.util.Log.d("RewardActivity", "Equipment ID: " + equipmentId);
+        android.util.Log.d("RewardActivity", "Equipment NAME: " + equipmentName);
+        android.util.Log.d("RewardActivity", "Equipment Image Res ID: " + equipmentImageResId);
     }
 
     private void initializeSensor() {
@@ -130,13 +143,12 @@ public class RewardActivity extends AppCompatActivity implements SensorEventList
 
         if (equipmentDropped) {
             equipmentRewardLayout.setVisibility(View.VISIBLE);
-            if (isWeapon) {
-                equipmentRewardText.setText("New Weapon!");
-                // TODO: Set weapon icon
-            } else {
-                equipmentRewardText.setText("New Armor!");
-                // TODO: Set armor icon
-            }
+
+            // Prikaži IME iz static store (npr. "Shield +10% Success Chance")
+            equipmentRewardText.setText(equipmentName != null ? equipmentName : "New Equipment!");
+
+            // Prikaži SLIKU iz static store
+            equipmentRewardImage.setImageResource(equipmentImageResId);
         }
     }
 

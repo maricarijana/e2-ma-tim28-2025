@@ -51,7 +51,7 @@ public class BattleFragment extends Fragment {
 
         // Servisi
         bossRepository = new BossRepository();
-        battleService = new BattleService(new BossService(bossRepository));
+        battleService = new BattleService(new BossService(bossRepository), requireContext());
 
         // Privremeni boss dok se ne povuče iz baze
         currentBoss = new Boss();
@@ -105,19 +105,29 @@ public class BattleFragment extends Fragment {
     }
 
     private void endBattle() {
-        BattleResult result = battleService.calculateRewards(currentBoss, attacksRemaining);
+        battleService.calculateRewards(currentBoss, attacksRemaining, new com.example.teamgame28.service.BattleService.RewardsCallback() {
+            @Override
+            public void onSuccess(com.example.teamgame28.model.BattleResult result) {
+                currentBoss.setAttemptedThisLevel(true);
+                currentBoss.setCoinsRewardPercent(
+                        result.getCoinsEarned() == currentBoss.getCoinsReward() ? 1.0 : 0.5
+                );
 
-        currentBoss.setAttemptedThisLevel(true);
-        currentBoss.setCoinsRewardPercent(
-                result.getCoinsEarned() == currentBoss.getCoinsReward() ? 1.0 : 0.5
-        );
+                bossRepository.updateBoss(
+                        currentBoss.getId() != null ? currentBoss.getId().toString() : "tempBoss",
+                        currentBoss
+                );
 
-        bossRepository.updateBoss(
-                currentBoss.getId() != null ? currentBoss.getId().toString() : "tempBoss",
-                currentBoss
-        );
+                openBattleResultFragment(result);
+            }
 
-        openBattleResultFragment(result);
+            @Override
+            public void onFailure(Exception e) {
+                android.util.Log.e("BattleFragment", "Failed to calculate rewards: " + e.getMessage());
+                // Otvori fragment sa praznim rezultatom
+                openBattleResultFragment(new com.example.teamgame28.model.BattleResult());
+            }
+        });
     }
 
     private void openBattleResultFragment(BattleResult result) {
