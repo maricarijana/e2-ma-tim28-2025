@@ -25,6 +25,17 @@ public class Clothing extends Equipment {
             active = false;
         }
     }
+    public Clothing(String id, String name, int cost,
+                    double ppBoostPercent,
+                    double successChanceBoost,
+                    double extraAttackChance,
+                    int imageResId) {
+        super(id, name, EquipmentType.CLOTHING,cost, imageResId);
+        this.ppBoostPercent = ppBoostPercent;
+        this.successChanceBoost = successChanceBoost;
+        this.extraAttackChance = extraAttackChance;
+        this.battlesRemaining = 2; // default traje 2 borbe
+    }
 
     // Getteri/setteri
     public double getPpBoostPercent() { return ppBoostPercent; }

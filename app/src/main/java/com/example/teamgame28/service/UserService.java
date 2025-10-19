@@ -99,6 +99,9 @@ public class UserService {
                 // Proveri novi nivo pomoću LevelingService
                 int newLevel = LevelingService.calculateLevelFromXp(newXp);
 
+                // 🔹 UVEK postavi level (čak i ako se nije promenio) da se sinhronizuje sa bazom!
+                profile.setLevel(newLevel);
+
                 // Ako je dostignut novi nivo, dodaj PP nagrade
                 if (newLevel > oldLevel) {
                     int totalPpReward = 0;
@@ -106,7 +109,6 @@ public class UserService {
                         totalPpReward += LevelingService.getPpRewardForLevel(lvl);
                     }
 
-                    profile.setLevel(newLevel);
                     profile.setPowerPoints(oldPp + totalPpReward);
                     profile.updateTitle();
 
@@ -118,11 +120,10 @@ public class UserService {
                             " i dobio " + totalPpReward + " PP! Nova etapa počinje.");
                 }
 
-                // Snimi ažurirani profil u bazu
+                // Snimi ažurirani profil u bazu (uključujući XP i level)
                 userRepository.updateUserProfile(userId, profile)
                         .addOnSuccessListener(aVoid -> {
-                            // Posle toga dodaj XP u istoriju (pozovi postojeću metodu)
-                            userRepository.addXpToUser(userId, xpToAdd);
+                            android.util.Log.d("UserService", "✅ Profil uspešno ažuriran - XP: " + newXp + ", Level: " + newLevel);
                         })
                         .addOnFailureListener(e ->
                             android.util.Log.e("UserService", "Greška pri ažuriranju profila: ", e)

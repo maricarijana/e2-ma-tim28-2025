@@ -311,20 +311,11 @@ public class EquipmentService {
             else if (eq instanceof Weapon) {
                 Weapon weapon = (Weapon) eq;
 
-                // Oružje ima verovatnoću da će se primeniti
-                // Probability raste sa upgrade-om (+0.01 po upgrade-u) i duplikatima (+0.02 po duplikatu)
-                double weaponProbability = weapon.getProbability();
-
-                // Bacanje kockice - da li će weapon raditi?
-                if (random.nextDouble() < weaponProbability) {
-                    ppBoost += (int) (basePP * weapon.getPpBoostPercent());
-                    coinBoost += weapon.getCoinBoostPercent();
-                    Log.d(TAG, "✅ Weapon SUCCESS: " + weapon.getName() +
-                          " (probability: " + (weaponProbability * 100) + "%)");
-                } else {
-                    Log.d(TAG, "❌ Weapon FAILED: " + weapon.getName() +
-                          " (probability: " + (weaponProbability * 100) + "%)");
-                }
+                // Weapon UVEK radi kada je aktivan!
+                ppBoost += (int) (basePP * weapon.getPpBoostPercent());
+                coinBoost += weapon.getCoinBoostPercent();
+                Log.d(TAG, "✅ Weapon primenjen: " + weapon.getName() +
+                      " (PP boost: +" + (weapon.getPpBoostPercent() * 100) + "%, Coin boost: +" + (weapon.getCoinBoostPercent() * 100) + "%)");
             }
         }
 

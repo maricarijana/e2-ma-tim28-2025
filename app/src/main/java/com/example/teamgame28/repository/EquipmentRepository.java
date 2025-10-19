@@ -125,6 +125,88 @@ public class EquipmentRepository {
                 });
     }
 
+    // ✅ Dodaj opremu koja je pala iz borbe (drop) - SA CALLBACK-om
+    public void addDroppedEquipment(String userId, Equipment equipment, AddEquipmentCallback callback) {
+        if (equipment == null) {
+            Log.e("EquipmentRepo", "❌ Equipment je NULL!");
+            if (callback != null) callback.onFailure(new Exception("Equipment je NULL"));
+            return;
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PROFILE_SUBCOLLECTION)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Log.d("EquipmentRepo", "📥 Profil učitan iz Firestore");
+
+                    if (!snapshot.exists()) {
+                        Log.e("EquipmentRepo", "❌ Profil NE POSTOJI!");
+                        if (callback != null) callback.onFailure(new Exception("Profil ne postoji"));
+                        return;
+                    }
+
+                    UserProfile profile = snapshot.toObject(UserProfile.class);
+                    if (profile == null) {
+                        Log.e("EquipmentRepo", "❌ Profil je NULL!");
+                        if (callback != null) callback.onFailure(new Exception("Profil je NULL"));
+                        return;
+                    }
+
+                    Log.d("EquipmentRepo", "✅ Profil učitan uspešno");
+
+                    if (equipment instanceof Weapon) {
+                        List<Weapon> list = profile.getOwnedWeapons();
+                        Log.d("EquipmentRepo", "📋 Trenutna ownedWeapons lista: " + (list != null ? list.size() : "NULL"));
+                        if (list == null) list = new ArrayList<>();
+                        list.add((Weapon) equipment);
+                        profile.setOwnedWeapons(list);
+                        Log.d("EquipmentRepo", "➕ WEAPON DODAT! Nova veličina: " + list.size());
+                    } else if (equipment instanceof Clothing) {
+                        List<Clothing> list = profile.getOwnedClothing();
+                        Log.d("EquipmentRepo", "📋 Trenutna ownedClothing lista: " + (list != null ? list.size() : "NULL"));
+                        if (list == null) list = new ArrayList<>();
+                        list.add((Clothing) equipment);
+                        profile.setOwnedClothing(list);
+                        Log.d("EquipmentRepo", "➕ CLOTHING DODAT! Nova veličina: " + list.size());
+                    } else if (equipment instanceof com.example.teamgame28.model.Potion) {
+                        List<com.example.teamgame28.model.Potion> list = profile.getOwnedPotions();
+                        Log.d("EquipmentRepo", "📋 Trenutna ownedPotions lista: " + (list != null ? list.size() : "NULL"));
+                        if (list == null) list = new ArrayList<>();
+                        list.add((com.example.teamgame28.model.Potion) equipment);
+                        profile.setOwnedPotions(list);
+                        Log.d("EquipmentRepo", "➕ POTION DODAT! Nova veličina: " + list.size());
+                    } else {
+                        Log.e("EquipmentRepo", "❌❌❌ EQUIPMENT NIJE NI WEAPON NI CLOTHING NI POTION!");
+                    }
+
+                    Log.d("EquipmentRepo", "💾 SNIMAM profil u Firestore...");
+
+                    // Snimi profil nazad
+                    db.collection(USERS_COLLECTION)
+                            .document(userId)
+                            .collection(PROFILE_SUBCOLLECTION)
+                            .document(userId)
+                            .set(profile)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("EquipmentRepo", "✅✅✅ PROFIL SAČUVAN USPEŠNO!");
+                                if (callback != null) callback.onSuccess();
+                                getOwnedEquipment(userId);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("EquipmentRepo", "❌❌❌ GREŠKA PRI SNIMANJU: " + e.getMessage());
+                                e.printStackTrace();
+                                if (callback != null) callback.onFailure(e);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("EquipmentRepo", "❌❌❌ GREŠKA PRI UČITAVANJU PROFILA: " + e.getMessage());
+                    e.printStackTrace();
+                    if (callback != null) callback.onFailure(e);
+                });
+    }
+
     // ✅ Aktiviraj opremu → ukloni iz owned liste i prebaci u active listu
     public void activateEquipment(String userId, Equipment equipment) {
         db.collection(USERS_COLLECTION)
@@ -592,6 +674,11 @@ public class EquipmentRepository {
     }
 
     public interface PostBattleCallback {
+        void onSuccess();
+        void onFailure(Exception e);
+    }
+
+    public interface AddEquipmentCallback {
         void onSuccess();
         void onFailure(Exception e);
     }

@@ -3,16 +3,25 @@ package com.example.teamgame28.service;
 import com.example.teamgame28.model.BattleData;
 import com.example.teamgame28.model.BattleResult;
 import com.example.teamgame28.model.Boss;
+import com.example.teamgame28.model.Clothing;
 import com.example.teamgame28.model.Equipment;
 import com.example.teamgame28.model.EquipmentBoosts;
 import com.example.teamgame28.model.UserProfile;
+import com.example.teamgame28.model.Weapon;
+import com.example.teamgame28.repository.EquipmentRepository;
 import com.example.teamgame28.repository.TaskRepository;
 import com.example.teamgame28.repository.UserRepository;
+import com.example.teamgame28.viewmodels.EquipmentViewModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.example.teamgame28.service.BattleResultService;
 
 import android.content.Context;
+import android.media.audiofx.DynamicsProcessing;
+import android.util.Log;
+
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +35,7 @@ public class BattleService {
     private final TaskRepository taskRepository;
     private final BattleResultService battleResultService;
     private final EquipmentService equipmentService;
+    private final EquipmentRepository equipmentRepository;
 
     public BattleService(BossService bossService, Context context) {
         this.bossService = bossService;
@@ -34,6 +44,7 @@ public class BattleService {
         this.taskRepository = TaskRepository.getInstance(context);
         this.battleResultService = new BattleResultService();
         this.equipmentService = new EquipmentService();
+        this.equipmentRepository= EquipmentRepository.getInstance();
     }
 
     /**
@@ -150,30 +161,119 @@ public class BattleService {
         android.util.Log.d("BattleService", "Boss HP: " + boss.getCurrentHP() + " / " + boss.getHp());
         android.util.Log.d("BattleService", "Boss coins reward: " + boss.getCoinsReward());
 
-        if (boss.getDefeated()) {
-            result.setCoinsEarned(boss.getCoinsReward());
-            result.setEquipmentChance(0.20); // 20% šanse za opremu
-            android.util.Log.d("BattleService", "✅ VICTORY! Coins earned: " + result.getCoinsEarned());
-        } else {
-            double hpPercent = (double) boss.getCurrentHP() / boss.getHp();
-            android.util.Log.d("BattleService", "Boss HP percent remaining: " + (hpPercent * 100) + "%");
+        // Učitaj coin boost od weapon-a
+        calculateCoinBoostAndRewards(boss, result, userId, callback);
+    }
 
-            if (hpPercent <= 0.5) {
-                int coinsEarned = boss.getCoinsReward() / 2;
-                result.setCoinsEarned(coinsEarned);
-                result.setEquipmentChance(0.10);
-                android.util.Log.d("BattleService", "⚔️ SERIOUS DAMAGE! Coins earned: " + coinsEarned + " (half of " + boss.getCoinsReward() + ")");
-            } else {
-                result.setCoinsEarned(0);
-                result.setEquipmentChance(0.0);
-                android.util.Log.d("BattleService", "❌ DEFEAT! No coins earned");
+    private void calculateCoinBoostAndRewards(Boss boss, BattleResult result, String userId, RewardsCallback callback) {
+        // Učitaj user profil da primenimo coin boost
+        userRepository.getUserProfileById(userId, new UserRepository.UserProfileCallback() {
+            @Override
+            public void onSuccess(UserProfile userProfile) {
+                // Izračunaj coin boost od aktivnih weapon-a
+                EquipmentBoosts boosts = equipmentService.calculateEquipmentBoosts(
+                        userProfile.getPowerPoints(),
+                        userProfile.getActiveEquipment()
+                );
+                double coinBoostPercent = boosts.getCoinBoost();
+
+                int baseCoins;
+                if (boss.getDefeated()) {
+                    baseCoins = boss.getCoinsReward();
+                    result.setEquipmentChance(0.99); // 20% šanse za opremu
+                } else {
+                    double hpPercent = (double) boss.getCurrentHP() / boss.getHp();
+                    if (hpPercent <= 0.5) {
+                        baseCoins = boss.getCoinsReward() / 2;
+                        result.setEquipmentChance(0.10);
+                    } else {
+                        baseCoins = 0;
+                        result.setEquipmentChance(0.0);
+                    }
+                }
+
+                // Primeni coin boost
+                int finalCoins = (int) (baseCoins * (1 + coinBoostPercent));
+                result.setCoinsEarned(finalCoins);
+
+                android.util.Log.d("BattleService", "💰 Coins: " + baseCoins + " base + " + (coinBoostPercent * 100) + "% boost = " + finalCoins + " total");
+
+                continueCalculateRewards(result, userId, callback);
             }
-        }
 
-        // Proveri da li se dobija oprema
+            @Override
+            public void onFailure(Exception e) {
+                android.util.Log.e("BattleService", "❌ Greška pri učitavanju profila za coin boost", e);
+                // Fallback - bez boosta
+                if (boss.getDefeated()) {
+                    result.setCoinsEarned(boss.getCoinsReward());
+                    result.setEquipmentChance(0.99);
+                } else {
+                    double hpPercent = (double) boss.getCurrentHP() / boss.getHp();
+                    if (hpPercent <= 0.5) {
+                        result.setCoinsEarned(boss.getCoinsReward() / 2);
+                        result.setEquipmentChance(0.10);
+                    } else {
+                        result.setCoinsEarned(0);
+                        result.setEquipmentChance(0.0);
+                    }
+                }
+                continueCalculateRewards(result, userId, callback);
+            }
+        });
+    }
+
+    private void continueCalculateRewards(BattleResult result, String userId, RewardsCallback callback) {
+
+        // Proveri da li se dobija oprema (20% šansa)
         result.setEquipmentDropped(rollForEquipment(result.getEquipmentChance()));
+        Equipment droppedEquipment = null;
+
         if (result.isEquipmentDropped()) {
-            result.setWeapon(random.nextInt(100) < 5); // 5% šansa za oružje
+            boolean isWeapon = random.nextInt(100) < 5; // AKO padne oprema: 5% weapon, 95% clothing
+            result.setWeapon(isWeapon);
+
+            // 🔹 Izaberi KONKRETAN equipment iz static store!
+            if (isWeapon) {
+                List<Weapon> weapons = com.example.teamgame28.staticData.WeaponStore.getWeapons();
+                Weapon randomWeapon = weapons.get(random.nextInt(weapons.size()));
+
+                // 🚀 Kreiraj novu instancu za Firestore
+                droppedEquipment = new Weapon(
+                        randomWeapon.getId(),
+                        randomWeapon.getName(),
+                        randomWeapon.getCost(),
+                        randomWeapon.getPpBoostPercent(),
+                        randomWeapon.getCoinBoostPercent(),
+                        randomWeapon.getImageResId()
+                );
+
+                result.setEquipmentId(randomWeapon.getId());
+                result.setEquipmentName(randomWeapon.getName());
+                result.setEquipmentImageResId(randomWeapon.getImageResId());
+                Log.d("BattleService", "🗡️ Weapon dropped: " + randomWeapon.getName());
+            } else {
+                List<Clothing> clothes = com.example.teamgame28.staticData.ClothingStore.getClothes();
+                Clothing randomClothing = clothes.get(random.nextInt(clothes.size()));
+
+                // 🚀 Kreiraj novu instancu za Firestore
+                droppedEquipment = new Clothing(
+                        randomClothing.getId(),
+                        randomClothing.getName(),
+                        randomClothing.getCost(),
+                        randomClothing.getPpBoostPercent(),
+                        randomClothing.getSuccessChanceBoost(),
+                        randomClothing.getExtraAttackChance(),
+                        randomClothing.getImageResId()
+                );
+
+                result.setEquipmentId(randomClothing.getId());
+                result.setEquipmentName(randomClothing.getName());
+                result.setEquipmentImageResId(randomClothing.getImageResId());
+                Log.d("BattleService", "🛡️ Clothing dropped: " + randomClothing.getName());
+            }
+
+
         }
 
         android.util.Log.d("BattleService", "💰 Total rewards: " + result.getCoinsEarned() + " coins, equipment: " + result.isEquipmentDropped());
@@ -198,9 +298,26 @@ public class BattleService {
             });
         }
 
-        if (result.isEquipmentDropped() && userId != null) {
-            android.util.Log.d("BattleService", "🎒 [BACKGROUND] Adding equipment to user");
-            userRepository.addEquipmentToUser(userId, result.isWeapon() ? "Weapon" : "Armor");
+        if (result.isEquipmentDropped() && userId != null && droppedEquipment != null) {
+            android.util.Log.d("BattleService", "🎒 [BACKGROUND] Adding equipment to user: " + droppedEquipment.getName());
+            // Dodaj PRAVI equipment objekat u bazu (drop iz borbe - ne menjaj coinse!)
+            equipmentRepository.addDroppedEquipment(userId, droppedEquipment, new EquipmentRepository.AddEquipmentCallback() {
+                @Override
+                public void onSuccess() {
+                    android.util.Log.d("BattleService", "✅✅✅ [BACKGROUND] Equipment USPEŠNO DODAT U BAZU!");
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    android.util.Log.e("BattleService", "❌❌❌ [BACKGROUND] GREŠKA PRI DODAVANJU EQUIPMENTA: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        } else {
+            android.util.Log.w("BattleService", "⚠️ Equipment nije dodat:");
+            android.util.Log.w("BattleService", "  - equipmentDropped: " + result.isEquipmentDropped());
+            android.util.Log.w("BattleService", "  - userId: " + (userId != null ? userId : "NULL"));
+            android.util.Log.w("BattleService", "  - droppedEquipment: " + (droppedEquipment != null ? droppedEquipment.getName() : "NULL"));
         }
 
         battleResultService.saveBattleResult(result);

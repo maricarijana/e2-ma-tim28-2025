@@ -327,6 +327,9 @@ public class BattleActivity extends AppCompatActivity implements SensorEventList
             intent.putExtra("EQUIPMENT_DROPPED", result.isEquipmentDropped());
             intent.putExtra("IS_WEAPON", result.isWeapon());
             intent.putExtra("BOSS_DEFEATED", result.isBossDefeated());
+            intent.putExtra("EQUIPMENT_ID", result.getEquipmentId());
+            intent.putExtra("EQUIPMENT_NAME", result.getEquipmentName());
+            intent.putExtra("EQUIPMENT_IMAGE_RES_ID", result.getEquipmentImageResId());
 
             android.util.Log.d("BattleActivity", "🚀 Starting RewardActivity...");
             startActivity(intent);
@@ -379,39 +382,33 @@ public class BattleActivity extends AppCompatActivity implements SensorEventList
 
     /**
      * Čuva/ažurira bosa u Firestore nakon borbe.
-     * - Ako je novi boss i nije pobeđen → snimi ga kao nepobeđenog
-     * - Ako je postojeći boss → ažuriraj ga (HP ili defeated status)
-     * - Ako je boss pobeđen → obriši ga ili označi kao defeated
+     * LOGIKA:
+     * - Ako je postojeći boss (već u bazi) → ažuriraj ga (HP ili defeated status)
+     * - Ako je novi boss → nije potrebno čuvati jer je već sačuvan u getBossForBattle()
      */
     private void saveBossToFirestore(String userId) {
         currentBoss.setUserId(userId);
 
-        if (isExistingBoss && currentBoss.getId() != null) {
-            // ✅ Postojeći boss - ažuriraj ga direktno preko Boss ID-a
-            android.util.Log.d("BattleActivity", "🔄 Updating existing boss (ID: " + currentBoss.getId() + ") in Firestore...");
+        if (currentBoss.getId() != null) {
+            // ✅ Boss ima ID → znači da je već u Firestore, ažuriraj ga
+            android.util.Log.d("BattleActivity", "🔄 Updating boss (ID: " + currentBoss.getId() + ") in Firestore...");
+            android.util.Log.d("BattleActivity", "  - HP: " + currentBoss.getCurrentHP() + "/" + currentBoss.getHp());
+            android.util.Log.d("BattleActivity", "  - Defeated: " + currentBoss.getDefeated());
 
-            bossService.updateBossAfterBattle(currentBoss.getId(), currentBoss).observe(this, success -> {
-                if (success != null && success) {
-                    android.util.Log.d("BattleActivity", "✅ Boss updated successfully");
-                } else {
-                    android.util.Log.e("BattleActivity", "❌ Failed to update boss");
+            bossService.updateBossAfterBattle(currentBoss, new BossService.UpdateBossCallback() {
+                @Override
+                public void onSuccess() {
+                    android.util.Log.d("BattleActivity", "✅ Boss updated successfully in Firestore");
                 }
-            });
-        } else if (!currentBoss.getDefeated()) {
-            // ✅ Novi boss koji nije pobeđen - snimi ga
-            android.util.Log.d("BattleActivity", "💾 Saving new undefeated boss to Firestore...");
-            bossService.addBoss(currentBoss).observe(this, bossId -> {
-                if (bossId != null) {
-                    android.util.Log.d("BattleActivity", "✅ New boss saved with ID: " + bossId);
-                    currentBoss.setId(bossId);  // Sačuvaj ID za buduće reference
-                } else {
-                    android.util.Log.e("BattleActivity", "❌ Failed to save new boss");
+
+                @Override
+                public void onFailure(String error) {
+                    android.util.Log.e("BattleActivity", "❌ Failed to update boss: " + error);
                 }
             });
         } else {
-            // ✅ Novi boss koji JE pobeđen - ne treba ga čuvati
-            // (Ili ako želiš istoriju svih pobeđenih bosova, sačuvaj ga ovde sa defeated=true)
-            android.util.Log.d("BattleActivity", "✅ Boss defeated - no need to save to Firestore");
+            // ℹ️ Boss nema ID → znači da nije sačuvan (što je bug, jer getBossForBattle() bi trebao da ga sačuva)
+            android.util.Log.w("BattleActivity", "⚠️ Boss nema ID - mogući bug u getBossForBattle()!");
         }
     }
 }

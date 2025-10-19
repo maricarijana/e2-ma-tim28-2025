@@ -6,6 +6,9 @@ public  class BattleResult {
     private double equipmentChance;
     private boolean equipmentDropped;
     private boolean isWeapon; // true = oružje, false = odeća
+    private String equipmentId; // ID konkretne opreme (npr. "sword", "gloves")
+    private String equipmentName; // Ime opreme (npr. "Shield +10% Success Chance")
+    private int equipmentImageResId; // Resource ID slike opreme
 
     public boolean isBossDefeated() {
         return bossDefeated;
@@ -45,5 +48,29 @@ public  class BattleResult {
 
     public void setWeapon(boolean weapon) {
         isWeapon = weapon;
+    }
+
+    public String getEquipmentId() {
+        return equipmentId;
+    }
+
+    public void setEquipmentId(String equipmentId) {
+        this.equipmentId = equipmentId;
+    }
+
+    public int getEquipmentImageResId() {
+        return equipmentImageResId;
+    }
+
+    public void setEquipmentImageResId(int equipmentImageResId) {
+        this.equipmentImageResId = equipmentImageResId;
+    }
+
+    public String getEquipmentName() {
+        return equipmentName;
+    }
+
+    public void setEquipmentName(String equipmentName) {
+        this.equipmentName = equipmentName;
     }
 }

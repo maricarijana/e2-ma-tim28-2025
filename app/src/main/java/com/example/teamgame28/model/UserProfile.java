@@ -1,5 +1,7 @@
 package com.example.teamgame28.model;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -119,6 +121,7 @@ public class UserProfile implements Serializable {
     public void setActiveWeapons(List<Weapon> activeWeapons) { this.activeWeapons = activeWeapons; }
 
     // Helper metode za dobijanje svih equipment kao jedne liste (za kompatibilnost)
+    @Exclude
     public List<Equipment> getOwnedEquipment() {
         List<Equipment> all = new ArrayList<>();
         if (ownedPotions != null) all.addAll(ownedPotions);
@@ -127,6 +130,7 @@ public class UserProfile implements Serializable {
         return all;
     }
 
+    @Exclude
     public List<Equipment> getActiveEquipment() {
         List<Equipment> all = new ArrayList<>();
         if (activePotions != null) all.addAll(activePotions);
