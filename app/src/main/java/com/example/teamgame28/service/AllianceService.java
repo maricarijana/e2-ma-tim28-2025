@@ -1,13 +1,19 @@
 package com.example.teamgame28.service;
 
 import com.example.teamgame28.repository.AllianceRepository;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class AllianceService {
 
     private final AllianceRepository allianceRepository;
-
+    private final FirebaseFirestore db;
     public AllianceService() {
         this.allianceRepository = new AllianceRepository();
+        this.db = FirebaseFirestore.getInstance();
     }
 
     /**
@@ -34,7 +40,25 @@ public class AllianceService {
         allianceRepository.inviteToAlliance(allianceId, fromUserId, toUserId, new AllianceRepository.RepoCallback() {
             @Override
             public void onSuccess() {
-                callback.onSuccess("Poziv uspešno poslat!");
+                // --- 2) upis Firestore invite-a kod PRIJATELJA ---
+                String inviteId = db.collection("tmp").document().getId(); // generiši ID
+
+                Map<String, Object> invite = new HashMap<>();
+                invite.put("inviteId", inviteId);
+                invite.put("allianceId", allianceId);
+                invite.put("fromUserId", fromUserId);   // vođa (pošiljalac)
+                invite.put("toUserId", toUserId);       // primalac (ovaj user)
+                invite.put("status", "pending");        // pending | accepted | declined
+                invite.put("createdAt", FieldValue.serverTimestamp());
+                invite.put("notified", false);          // prijatelj još nije prikazao lokalnu notifikaciju
+
+                db.collection("app_users")
+                        .document(toUserId)
+                        .collection("invites")
+                        .document(inviteId)
+                        .set(invite)
+                        .addOnSuccessListener(unused -> callback.onSuccess("Poziv uspešno poslat!"))
+                        .addOnFailureListener(e -> callback.onFailure("Poziv poslat, ali upis obaveštenja nije uspeo: " + e.getMessage()));
             }
 
             @Override

@@ -133,21 +133,56 @@ public class AllianceRepository {
 
     /**
      * Helper: update user profila da zna u kom je savezu.
+     * VAŽNO: currentAllianceId mora biti u profile podkolekciji!
      */
     private void updateUserAlliance(String userId, String allianceId) {
-        DocumentReference userRef = db.collection(COLLECTION_USERS).document(userId);
+        // currentAllianceId je u app_users/{userId}/profile/{userId}, NE u app_users/{userId}!
+        DocumentReference profileRef = db.collection("app_users")
+                .document(userId)
+                .collection("profile")
+                .document(userId);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentAllianceId", allianceId);
 
-        userRef.update(updates)
+        profileRef.update(updates)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ currentAllianceId postavljen za usera " + userId))
                 .addOnFailureListener(e -> Log.e(TAG, "❌ Greska kod update-a user profila", e));
+    }
+
+    /**
+     * Dohvati sve saveze gde je korisnik u pendingInvites listi.
+     */
+    public void getPendingInvitesForUser(String userId, AllianceListCallback callback) {
+        db.collection(COLLECTION_ALLIANCES)
+                .whereArrayContains("pendingInvites", userId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    java.util.List<Alliance> alliances = new java.util.ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Alliance alliance = doc.toObject(Alliance.class);
+                        if (alliance != null) {
+                            alliances.add(alliance);
+                        }
+                    }
+                    Log.d(TAG, "✅ Dohvaćeno " + alliances.size() + " pending poziva");
+                    callback.onSuccess(alliances);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Greška kod dohvatanja poziva", e);
+                    callback.onFailure(e);
+                });
     }
 
     // Callback interfejs za repo metode
     public interface RepoCallback {
         void onSuccess();
+        void onFailure(Exception e);
+    }
+
+    // Callback interfejs za listu saveza
+    public interface AllianceListCallback {
+        void onSuccess(java.util.List<Alliance> alliances);
         void onFailure(Exception e);
     }
 }

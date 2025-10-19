@@ -157,6 +157,12 @@ public class UserRepository {
         void onFailure(Exception e);
     }
 
+    // Callback interface za listu korisnika
+    public interface UserListCallback {
+        void onSuccess(java.util.List<User> users);
+        void onFailure(Exception e);
+    }
+
     // Metoda za dobijanje korisnika po ID-u
     public void getUserById(String userId, UserCallback callback) {
         firestore.collection(USERS_COLLECTION)
@@ -171,6 +177,69 @@ public class UserRepository {
                     }
                 })
                 .addOnFailureListener(callback::onFailure);
+    }
+
+    // Metoda za pretragu korisnika po username-u
+    public void searchUsersByUsername(String query, UserListCallback callback) {
+        if (query == null || query.trim().isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        firestore.collection(USERS_COLLECTION)
+                .orderBy("username")
+                .startAt(query)
+                .endAt(query + "\uf8ff")
+                .limit(50) // Limit rezultata
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    java.util.List<User> users = new java.util.ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        User user = doc.toObject(User.class);
+                        if (user != null) {
+                            users.add(user);
+                        }
+                    }
+                    callback.onSuccess(users);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    // Metoda za dohvatanje liste User objekata po userId list-i
+    public void getUsersByIds(java.util.List<String> userIds, UserListCallback callback) {
+        if (userIds == null || userIds.isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        // Firestore 'in' query limit je 10, tako da moramo da delimo ako ima više
+        java.util.List<User> allUsers = new java.util.ArrayList<>();
+        int batchSize = 10;
+        int totalBatches = (int) Math.ceil((double) userIds.size() / batchSize);
+        final int[] completedBatches = {0};
+
+        for (int i = 0; i < userIds.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, userIds.size());
+            java.util.List<String> batch = userIds.subList(i, end);
+
+            firestore.collection(USERS_COLLECTION)
+                    .whereIn("uid", batch)
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                            User user = doc.toObject(User.class);
+                            if (user != null) {
+                                allUsers.add(user);
+                            }
+                        }
+
+                        completedBatches[0]++;
+                        if (completedBatches[0] == totalBatches) {
+                            callback.onSuccess(allUsers);
+                        }
+                    })
+                    .addOnFailureListener(callback::onFailure);
+        }
     }
 
     // Metoda za dobijanje UserProfile-a po ID-u

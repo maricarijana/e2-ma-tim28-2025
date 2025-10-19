@@ -17,10 +17,13 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.example.teamgame28.R;
 import com.example.teamgame28.fragments.CategoryManagementFragment;
 import com.example.teamgame28.fragments.EquipmentActivationFragment;
+import com.example.teamgame28.fragments.FriendRequestsFragment;
+import com.example.teamgame28.fragments.FriendsFragment;
 import com.example.teamgame28.fragments.ProfileFragment;
 import com.example.teamgame28.fragments.ShopFragment;
 import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
+import com.example.teamgame28.listener.InviteRealtimeListener;
 import com.example.teamgame28.model.BattleData;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.repository.BossRepository;
@@ -44,6 +47,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        FirebaseUser cu = FirebaseAuth.getInstance().getCurrentUser();
+        if (cu != null) {
+            InviteRealtimeListener.start(getApplicationContext(), cu.getUid());
+        }
+
 
         // 🔹 Toolbar setup
         Toolbar toolbar = findViewById(R.id.topAppBar);
@@ -108,6 +116,11 @@ public class MainActivity extends AppCompatActivity {
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new EquipmentActivationFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_friends) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new FriendsFragment())
                         .commit();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()
@@ -221,4 +234,45 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
+    // 🔹 Toolbar menu inflate
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    // 🔹 Toolbar menu handler
+    @Override
+    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_notifications) {
+            // Otvori FriendRequestsFragment
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new FriendRequestsFragment())
+                    .addToBackStack(null)
+                    .commit();
+            return true;
+        } else if (itemId == R.id.action_profile) {
+            // Otvori ProfileFragment
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new ProfileFragment())
+                    .addToBackStack(null)
+                    .commit();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // ugasi Firestore listener kad se Activity ruši
+        InviteRealtimeListener.stop();
+        super.onDestroy();
+    }
+
 }
