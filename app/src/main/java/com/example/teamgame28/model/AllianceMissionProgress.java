@@ -2,7 +2,6 @@ package com.example.teamgame28.model;
 
 import java.io.Serializable;
 
-// ========== ALLIANCE MISSION PROGRESS ==========
 public class AllianceMissionProgress implements Serializable {
     private String missionId;
     private String userId;
@@ -12,9 +11,19 @@ public class AllianceMissionProgress implements Serializable {
     private int messagesSent;
     private boolean noUnfinishedTasks;
 
+    private long lastMessageTimestamp;
+
+    // 🔹 Postojeća nova polja
+    private int bossHits; // broj uspešnih udaraca na bossa tokom specijalne misije
+    private int daysWithMessages; // broj dana u kojima je korisnik slao poruke savezu
+
+    // 🔹 NOVO POLJE za specijalne zadatke (max 10)
+    private int taskPoints; // broj "poena" iz završenih zadataka (ograničeno na 10)
+
     public AllianceMissionProgress() {}
 
-    public AllianceMissionProgress(String missionId, String userId, int damageDealt, int tasksCompleted, int shopPurchases, int messagesSent, boolean noUnfinishedTasks) {
+    public AllianceMissionProgress(String missionId, String userId, int damageDealt, int tasksCompleted,
+                                   int shopPurchases, int messagesSent, boolean noUnfinishedTasks) {
         this.missionId = missionId;
         this.userId = userId;
         this.damageDealt = damageDealt;
@@ -22,8 +31,12 @@ public class AllianceMissionProgress implements Serializable {
         this.shopPurchases = shopPurchases;
         this.messagesSent = messagesSent;
         this.noUnfinishedTasks = noUnfinishedTasks;
+        this.bossHits = 0;
+        this.daysWithMessages = 0;
+        this.taskPoints = 0;
     }
 
+    // ✅ Getteri i setteri
     public String getMissionId() { return missionId; }
     public void setMissionId(String missionId) { this.missionId = missionId; }
 
@@ -44,4 +57,22 @@ public class AllianceMissionProgress implements Serializable {
 
     public boolean isNoUnfinishedTasks() { return noUnfinishedTasks; }
     public void setNoUnfinishedTasks(boolean noUnfinishedTasks) { this.noUnfinishedTasks = noUnfinishedTasks; }
+
+    public long getLastMessageTimestamp() {
+        return lastMessageTimestamp;
+    }
+
+    public void setLastMessageTimestamp(long lastMessageTimestamp) {
+        this.lastMessageTimestamp = lastMessageTimestamp;
+    }
+
+    public int getBossHits() { return bossHits; }
+    public void setBossHits(int bossHits) { this.bossHits = bossHits; }
+
+    public int getDaysWithMessages() { return daysWithMessages; }
+    public void setDaysWithMessages(int daysWithMessages) { this.daysWithMessages = daysWithMessages; }
+
+    // 🔹 NOVO: TaskPoints (za misiju)
+    public int getTaskPoints() { return taskPoints; }
+    public void setTaskPoints(int taskPoints) { this.taskPoints = taskPoints; }
 }

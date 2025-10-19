@@ -80,6 +80,15 @@ public class EquipmentService {
         callback.onSuccess("Uspešno kupljena oprema: " + equipment.getName());
         Log.d(TAG, "✅ Kupljena oprema: " + equipment.getName() +
               " za " + equipment.getCost() + " coina");
+
+        // 🔹 BONUS: ako postoji aktivna specijalna misija, smanji boss HP za 2
+        try {
+            SpecialTaskMissionService specialService = new SpecialTaskMissionService();
+            specialService.recordShopPurchase(null, userId); // null jer nema Task-a u kupovini
+            Log.d(TAG, "🛒 Specijalna misija: kupovina registrovana (-2 HP bossa).");
+        } catch (Exception e) {
+            Log.e(TAG, "⚠️ Greška pri ažuriranju specijalne misije nakon kupovine", e);
+        }
     }
 
     // ========== AKTIVACIJA OPREME ==========

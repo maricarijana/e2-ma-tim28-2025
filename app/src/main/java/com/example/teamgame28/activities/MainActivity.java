@@ -1,4 +1,12 @@
 package com.example.teamgame28.activities;
+// 🔹 Pokretanje periodične provere isteka misija (1x dnevno)
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.ExistingPeriodicWorkPolicy;
+
+import com.example.teamgame28.workers.MissionExpiryWorker;
+
+import java.util.concurrent.TimeUnit;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -143,6 +151,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        // === 🕒 Automatska provera isteka misija ===
+        PeriodicWorkRequest missionCheckRequest =
+                new PeriodicWorkRequest.Builder(MissionExpiryWorker.class, 1, TimeUnit.DAYS)
+                        .build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "MissionExpiryWork",
+                ExistingPeriodicWorkPolicy.KEEP,
+                missionCheckRequest
+        );
+
     }
 
     // 🔹 Učitavanje korisnika u drawer header

@@ -3,8 +3,14 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.example.teamgame28.R;
+import com.example.teamgame28.model.Badge;
+import com.example.teamgame28.model.Clothing;
+import com.example.teamgame28.model.Potion;
+import com.example.teamgame28.model.PotionType;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.model.UserProfile;
+import com.example.teamgame28.service.EquipmentService;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.firebase.auth.AuthResult;
@@ -437,5 +443,7 @@ public class UserRepository {
                 Log.e(TAG, "❌ Greška pri ažuriranju login streak-a: ", e)
         );
     }
+
+
 
 }

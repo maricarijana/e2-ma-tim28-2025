@@ -23,7 +23,8 @@ public class UserProfile implements Serializable {
     // Ukupan PP = bazni PP (iz nivoa) + powerPoints (trajni boost)
     private int powerPoints;
     private int coins;
-    private List<String> badges;
+    private List<Badge> badges;
+
 
     // VAŽNO: Firestore ne može deserijalizovati List<Equipment> jer je Equipment abstract!
     // Zato delimo liste po konkretnim tipovima:
@@ -89,8 +90,8 @@ public class UserProfile implements Serializable {
     public int getCoins() { return coins; }
     public void setCoins(int coins) { this.coins = coins; }
 
-    public List<String> getBadges() { return badges; }
-    public void setBadges(List<String> badges) { this.badges = badges; }
+    public List<Badge> getBadges() { return badges; }
+    public void setBadges(List<Badge> badges) { this.badges = badges; }
 
     public int getActiveDays() { return activeDays; }
     public void setActiveDays(int activeDays) { this.activeDays = activeDays; }
@@ -147,11 +148,13 @@ public class UserProfile implements Serializable {
         this.coins += amount;
     }
 
-    public void addBadge(String badge) {
-        if (!this.badges.contains(badge)) {
-            this.badges.add(badge);
-        }
+    public void addBadge(Badge badge) {
+        if (this.badges == null) this.badges = new ArrayList<>();
+        boolean alreadyHas = this.badges.stream()
+                .anyMatch(b -> b.getName().equals(badge.getName()));
+        if (!alreadyHas) this.badges.add(badge);
     }
+
 
     /**
      * Helper metoda za određivanje titule na osnovu nivoa.

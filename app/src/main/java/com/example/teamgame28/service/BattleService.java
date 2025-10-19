@@ -96,6 +96,16 @@ public class BattleService {
             android.util.Log.d("BattleService", "  ✅ HIT! Dealt " + playerPP + " damage");
             android.util.Log.d("BattleService", "  - Boss HP after: " + newHP + "/" + boss.getHp() + " (reduced by " + (oldHP - newHP) + ")");
 
+            // 🔹 Ako je pogodak uspešan, registruj ga i u specijalnoj misiji
+            String userId = getCurrentUserId();
+            if (userId != null) {
+                try {
+                    new SpecialTaskMissionService().recordBossHit(userId);
+                } catch (Exception e) {
+                    android.util.Log.e("BattleService", "⚠️ Greška pri slanju boss hita specijalnoj misiji", e);
+                }
+            }
+
             if (newHP == 0) {
                 boss.setDefeated(true);
                 android.util.Log.d("BattleService", "  💀 BOSS DEFEATED!");
