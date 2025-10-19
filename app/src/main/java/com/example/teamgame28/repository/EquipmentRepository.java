@@ -10,10 +10,11 @@ import com.example.teamgame28.model.Equipment;
 import com.example.teamgame28.model.UserProfile;
 import com.example.teamgame28.model.Weapon;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import com.google.firebase.firestore.FieldValue;
 public class EquipmentRepository {
 
     private static EquipmentRepository instance;
@@ -125,6 +126,48 @@ public class EquipmentRepository {
                 });
     }
 
+
+
+    /**
+     * ✅ Atomski dodaje opremu u odgovarajuću listu KORIŠĆENJEM FieldValue.arrayUnion.
+     * Ovo je najsigurniji način da se izbegnu "race conditions".
+     *
+     * @param userId ID korisnika
+     * @param equipment Oprema koja se dodaje
+     */
+    public void addEquipmentAtomically(String userId, Equipment equipment) {
+        String fieldToUpdate; // Naziv polja u Firestore dokumentu
+
+        // Odredi u koju listu (polje) treba dodati opremu
+        if (equipment instanceof Weapon) {
+            fieldToUpdate = "ownedWeapons";
+        } else if (equipment instanceof Clothing) {
+            fieldToUpdate = "ownedClothing";
+        } else if (equipment instanceof com.example.teamgame28.model.Potion) {
+            fieldToUpdate = "ownedPotions";
+        } else {
+            Log.e("EquipmentRepo", "Nepoznat tip opreme, prekidam dodavanje.");
+            return;
+        }
+
+        Log.d("EquipmentRepo", "Atomski dodajem " + equipment.getName() + " u polje '" + fieldToUpdate + "'");
+
+        // Izvrši atomsko ažuriranje
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PROFILE_SUBCOLLECTION)
+                .document(userId)
+                .update(fieldToUpdate, FieldValue.arrayUnion(equipment))
+                .addOnSuccessListener(aVoid ->
+                        Log.d("EquipmentRepo", "✅ Oprema uspešno atomski dodata: " + equipment.getName()))
+                .addOnFailureListener(e ->
+                        Log.e("EquipmentRepo", "❌ Greška pri atomskom dodavanju opreme", e));
+    }
+
+// Stara `addEquipmentFree` metoda ti više ne treba, možeš je obrisati ili ostaviti
+// ako je koristiš na nekom drugom mestu gde nema paralelnog upisa.
+
+
     // ✅ Dodaj opremu koja je pala iz borbe (drop) - SA CALLBACK-om
     public void addDroppedEquipment(String userId, Equipment equipment, AddEquipmentCallback callback) {
         if (equipment == null) {
@@ -188,7 +231,8 @@ public class EquipmentRepository {
                             .document(userId)
                             .collection(PROFILE_SUBCOLLECTION)
                             .document(userId)
-                            .set(profile)
+                            .set(profile, SetOptions.merge())
+
                             .addOnSuccessListener(aVoid -> {
                                 Log.d("EquipmentRepo", "✅✅✅ PROFIL SAČUVAN USPEŠNO!");
                                 if (callback != null) callback.onSuccess();
