@@ -167,9 +167,21 @@ public class BossService {
                     android.util.Log.d("BossService", "✅ Nema nepobeđenih bosova, kreiram novog za nivo " + currentLevel);
 
                     // Dohvati poslednjeg pobeđenog bosa da izračunaš HP/coins
+                    // ... unutar else bloka
                     bossRepository.getLastDefeatedBossCallback(userId, new BossRepository.BossCallback() {
                         @Override
                         public void onSuccess(Boss lastDefeatedBoss) {
+                            // ======================= NOVI KOD: KLJUČNA PROVERA =======================
+                            // Proveri da li je poslednji pobeđeni bos baš onaj za trenutni nivo korisnika.
+                            // Ako jeste, ne dozvoli kreiranje novog.
+                            if (lastDefeatedBoss != null && lastDefeatedBoss.getBossLevel() == currentLevel) {
+                                android.util.Log.w("BossService", "⚠️ Korisnik je već pobedio bosa za nivo " + currentLevel + ". Nema kreiranja novog.");
+                                callback.onFailure("Već ste pobedili bosa na ovom nivou! Pređite na sledeći nivo da biste se suočili sa novim izazovom.");
+                                return; // PREKINI IZVRŠAVANJE
+                            }
+                            // ========================================================================
+
+                            // Ako provera prođe, nastavi sa kreiranjem novog bosa kao i do sada
                             Boss newBoss = getOrCreateBossForLevel(userId, currentLevel, lastDefeatedBoss);
                             newBoss.setLastAttemptedUserLevel(currentLevel); // Označi da je pokušano na ovom nivou
 

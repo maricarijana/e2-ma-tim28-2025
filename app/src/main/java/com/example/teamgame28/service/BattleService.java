@@ -47,44 +47,6 @@ public class BattleService {
         this.equipmentRepository= EquipmentRepository.getInstance();
     }
 
-    /**
-     * Kreira novog bosa na osnovu nivoa
-     * Prvi bos ima 200 HP
-     * Svaki naredni: HP = HP prethodnog * 2 + HP prethodnog / 2
-     */
-    public Boss createBoss(int bossLevel, Boss previousBoss) {
-        Boss boss = new Boss();
-        boss.setBossLevel(bossLevel);
-
-        int hp;
-        int coinsReward;
-
-        // Ako previousBoss nije prosleđen, računaj rekurzivno
-        if (previousBoss == null) {
-            hp = calculateBossHPForLevel(bossLevel);
-            coinsReward = calculateBossRewardForLevel(bossLevel);
-        } else {
-            // Računaj na osnovu prethodnog bosa
-            int previousHP = previousBoss.getHp();
-            hp = previousHP * 2 + previousHP / 2;
-            coinsReward = (int) (previousBoss.getCoinsReward() * 1.2);
-        }
-
-        boss.setHp(hp);
-        boss.setCurrentHP(hp);
-        boss.setDefeated(false);
-        boss.setAttemptedThisLevel(false);
-        boss.setCoinsReward(coinsReward);
-        boss.setCoinsRewardPercent(1.0);
-
-        return boss;
-    }
-
-    /**
-     * Rekurzivno računa HP bossa za određeni nivo.
-     * Level 1: 200 HP
-     * Level N: HP(N-1) * 2 + HP(N-1) / 2
-     */
     private int calculateBossHPForLevel(int level) {
         // Zaštita od beskonačne rekurzije
         if (level <= 0) {
@@ -301,18 +263,8 @@ public class BattleService {
         if (result.isEquipmentDropped() && userId != null && droppedEquipment != null) {
             android.util.Log.d("BattleService", "🎒 [BACKGROUND] Adding equipment to user: " + droppedEquipment.getName());
             // Dodaj PRAVI equipment objekat u bazu (drop iz borbe - ne menjaj coinse!)
-            equipmentRepository.addDroppedEquipment(userId, droppedEquipment, new EquipmentRepository.AddEquipmentCallback() {
-                @Override
-                public void onSuccess() {
-                    android.util.Log.d("BattleService", "✅✅✅ [BACKGROUND] Equipment USPEŠNO DODAT U BAZU!");
-                }
+            equipmentRepository.addEquipmentAtomically(userId, droppedEquipment);
 
-                @Override
-                public void onFailure(Exception e) {
-                    android.util.Log.e("BattleService", "❌❌❌ [BACKGROUND] GREŠKA PRI DODAVANJU EQUIPMENTA: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            });
         } else {
             android.util.Log.w("BattleService", "⚠️ Equipment nije dodat:");
             android.util.Log.w("BattleService", "  - equipmentDropped: " + result.isEquipmentDropped());
