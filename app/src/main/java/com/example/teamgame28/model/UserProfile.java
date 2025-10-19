@@ -34,6 +34,8 @@ public class UserProfile implements Serializable {
     private List<Potion> activePotions;
     private List<Clothing> activeClothing;
     private List<Weapon> activeWeapons;
+    private String currentAllianceId;
+    private List<String> friends;
 
 
     // Statistika
@@ -61,6 +63,8 @@ public class UserProfile implements Serializable {
         this.activeClothing = new ArrayList<>();
         this.activeWeapons = new ArrayList<>();
         this.xpHistory = new HashMap<>();
+        this.currentAllianceId = null;   // ili "" ako hoćeš prazno
+        this.friends = new ArrayList<>();
     }
 
     // Getteri i setteri
@@ -174,6 +178,11 @@ public class UserProfile implements Serializable {
                 break;
         }
     }
+    public String getCurrentAllianceId() { return currentAllianceId; }
+    public void setCurrentAllianceId(String currentAllianceId) { this.currentAllianceId = currentAllianceId; }
+    public List<String> getFriends() { return friends; }
+    public void setFriends(List<String> friends) { this.friends = friends; }
+
 
 
 }
