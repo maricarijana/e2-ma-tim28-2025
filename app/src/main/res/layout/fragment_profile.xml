@@ -204,16 +204,35 @@
                         android:textStyle="bold"
                         android:textColor="@color/black" />
 
+                    <!-- Horizontalni prikaz slika bedževa -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/badges_container"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingBottom="8dp" />
+                    </HorizontalScrollView>
+
+                    <!-- Tekst "Nema bedževa" koji se prikazuje ako lista prazna -->
                     <TextView
-                        android:id="@+id/profile_badges"
+                        android:id="@+id/profile_badges_placeholder"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="Nema bedževa"
                         android:textSize="14sp"
-                        android:textColor="@color/black" />
+                        android:textColor="@color/black"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
 
             <!-- Oprema -->
             <com.google.android.material.card.MaterialCardView
