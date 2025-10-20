@@ -33,21 +33,34 @@ public class InviteRealtimeListener {
                         for (DocumentChange dc : snaps.getDocumentChanges()) {
                             if (dc.getType() != DocumentChange.Type.ADDED) continue;
 
+                            String type = dc.getDocument().getString("type");
                             String allianceId = dc.getDocument().getString("allianceId");
                             String fromUserId = dc.getDocument().getString("fromUserId");
-
-                            // (Opcionalno) možeš dovući i imena, ali i bez toga radi – prikažemo generic poruku
-                            String allianceName = dc.getDocument().getString("allianceName"); // ako dodaš u invite mapu
-                            String leaderName   = dc.getDocument().getString("leaderName");   // ako dodaš u invite mapu
+                            String allianceName = dc.getDocument().getString("allianceName");
 
                             int nid = (currentUserId + "_" + dc.getDocument().getId()).hashCode();
 
-                            NotificationHelper.sendAllianceInviteNotification(
-                                    appContext,
-                                    allianceName != null ? allianceName : "Savez",
-                                    leaderName   != null ? leaderName   : "Vođa",
-                                    nid
-                            );
+                            if ("acceptance".equals(type)) {
+                                // Ovo je notifikacija da je neko prihvatio poziv
+                                String fromUserName = dc.getDocument().getString("fromUserName");
+
+                                NotificationHelper.sendAllianceAcceptanceNotification(
+                                        appContext,
+                                        fromUserName != null ? fromUserName : "Korisnik",
+                                        allianceName != null ? allianceName : "Savez",
+                                        nid
+                                );
+                            } else {
+                                // Ovo je poziv u savez (default)
+                                String leaderName = dc.getDocument().getString("leaderName");
+
+                                NotificationHelper.sendAllianceInviteNotification(
+                                        appContext,
+                                        allianceName != null ? allianceName : "Savez",
+                                        leaderName != null ? leaderName : "Vođa",
+                                        nid
+                                );
+                            }
 
                             // markiraj kao 'notified' da se ne duplira
                             dc.getDocument().getReference().update("notified", true);

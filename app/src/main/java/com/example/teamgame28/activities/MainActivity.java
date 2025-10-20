@@ -122,6 +122,11 @@ public class MainActivity extends AppCompatActivity {
                         .beginTransaction()
                         .replace(R.id.fragment_container, new FriendsFragment())
                         .commit();
+            } else if (itemId == R.id.nav_alliance) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                        .commit();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()
                         .beginTransaction()
@@ -137,10 +142,18 @@ public class MainActivity extends AppCompatActivity {
 
         // 🔹 Početni fragment
         if (savedInstanceState == null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new TaskListFragment())
-                    .commit();
+            // Proveri da li treba otvoriti AllianceDetailsFragment
+            if (getIntent().getBooleanExtra("open_alliance_details", false)) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                        .commit();
+            } else {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new TaskListFragment())
+                        .commit();
+            }
         }
 
         // 🔹 Nova OnBackPressedDispatcher logika (umesto onBackPressed)
@@ -266,6 +279,20 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+
+        // Proveri da li treba otvoriti AllianceDetailsFragment
+        if (intent.getBooleanExtra("open_alliance_details", false)) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                    .commit();
+        }
     }
 
     @Override

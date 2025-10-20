@@ -179,25 +179,30 @@ public class UserRepository {
                 .addOnFailureListener(callback::onFailure);
     }
 
-    // Metoda za pretragu korisnika po username-u
+    // Metoda za pretragu korisnika po username-u (case-insensitive, substring match)
     public void searchUsersByUsername(String query, UserListCallback callback) {
         if (query == null || query.trim().isEmpty()) {
             callback.onSuccess(new java.util.ArrayList<>());
             return;
         }
 
+        // Konvertuj query u lowercase za case-insensitive search
+        String lowerQuery = query.toLowerCase().trim();
+
+        // Učitaj sve korisnike i filtriraj na klijentu
+        // (Za veće baze podataka preporučuje se Algolia ili Elasticsearch)
         firestore.collection(USERS_COLLECTION)
-                .orderBy("username")
-                .startAt(query)
-                .endAt(query + "\uf8ff")
-                .limit(50) // Limit rezultata
+                .limit(500) // Povećaj limit za bolju pretragu
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     java.util.List<User> users = new java.util.ArrayList<>();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         User user = doc.toObject(User.class);
-                        if (user != null) {
-                            users.add(user);
+                        if (user != null && user.getUsername() != null) {
+                            // Case-insensitive substring match
+                            if (user.getUsername().toLowerCase().contains(lowerQuery)) {
+                                users.add(user);
+                            }
                         }
                     }
                     callback.onSuccess(users);

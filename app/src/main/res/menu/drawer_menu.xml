@@ -29,6 +29,10 @@
             android:icon="@android:drawable/ic_menu_search"
             android:title="Prijatelji" />
         <item
+            android:id="@+id/nav_alliance"
+            android:icon="@android:drawable/ic_menu_compass"
+            android:title="Moj Savez" />
+        <item
             android:id="@+id/nav_profile"
             android:icon="@android:drawable/ic_menu_myplaces"
             android:title="Profil" />

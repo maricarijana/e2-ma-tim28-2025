@@ -70,9 +70,10 @@ public class AllianceService {
 
     /**
      * Prihvati poziv za savez.
+     * Ako korisnik već ima savez (oldAllianceId), automatski ga napušta i pridružuje se novom.
      */
-    public void acceptInvite(String allianceId, String userId, ServiceCallback callback) {
-        allianceRepository.acceptInvite(allianceId, userId, new AllianceRepository.RepoCallback() {
+    public void acceptInvite(String allianceId, String userId, String oldAllianceId, ServiceCallback callback) {
+        allianceRepository.acceptInvite(allianceId, userId, oldAllianceId, new AllianceRepository.RepoCallback() {
             @Override
             public void onSuccess() {
                 callback.onSuccess("Uspešno si se pridružio savezu!");
@@ -119,9 +120,32 @@ public class AllianceService {
         });
     }
 
+    /**
+     * Proveri da li savez ima aktivnu misiju.
+     */
+    public void hasActiveMission(String allianceId, ActiveMissionCallback callback) {
+        allianceRepository.hasActiveMission(allianceId, new AllianceRepository.ActiveMissionCallback() {
+            @Override
+            public void onResult(boolean hasActiveMission) {
+                callback.onResult(hasActiveMission);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure("Greška pri proveri misije: " + e.getMessage());
+            }
+        });
+    }
+
     // Generic service callback
     public interface ServiceCallback {
         void onSuccess(String message);
+        void onFailure(String error);
+    }
+
+    // Callback za proveru aktivne misije
+    public interface ActiveMissionCallback {
+        void onResult(boolean hasActiveMission);
         void onFailure(String error);
     }
 }

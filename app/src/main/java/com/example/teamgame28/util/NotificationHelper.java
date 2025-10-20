@@ -82,6 +82,47 @@ public class NotificationHelper {
         }
     }
 
+    /**
+     * Pošalji notifikaciju vođi da je neko prihvatio poziv.
+     */
+    public static void sendAllianceAcceptanceNotification(Context context,
+                                                          String memberName,
+                                                          String allianceName,
+                                                          int notificationId) {
+        Context appCtx = context.getApplicationContext();
+
+        // Kanal uvek pre notify
+        createNotificationChannel(appCtx);
+
+        // Intent ka ekranu sa detaljima saveza (možeš kasnije dodati)
+        Intent intent = new Intent(appCtx, AllianceInvitesActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                appCtx,
+                notificationId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // Notifikacija
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(appCtx, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_more)
+                .setContentTitle("Novi član u savezu")
+                .setContentText(memberName + " se pridružio savezu \"" + allianceName + "\"")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true); // Može se dismissovati tapom
+
+        NotificationManager notificationManager =
+                (NotificationManager) appCtx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null) {
+            notificationManager.notify(notificationId, builder.build());
+        }
+    }
+
     /** Ruši notifikaciju iz KODA (jer je nedismissable). */
     public static void cancelNotification(Context context, int notificationId) {
         NotificationManager notificationManager =

@@ -143,16 +143,10 @@ public class UserSearchAdapter extends RecyclerView.Adapter<UserSearchAdapter.Us
 
             // Prikaži odgovarajuća dugmad/tekst na osnovu režima
             if (mode == Mode.FRIEND_LIST) {
-                // Režim liste prijatelja: prikaži "Dodaj u savez"
+                // Režim liste prijatelja: samo dugme "Profil", bez dodatnih akcija
                 addFriendButton.setVisibility(View.GONE);
                 alreadyFriendsText.setVisibility(View.GONE);
-                inviteAllianceButton.setVisibility(View.VISIBLE);
-
-                inviteAllianceButton.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onInviteToAllianceClick(user);
-                    }
-                });
+                inviteAllianceButton.setVisibility(View.GONE);
 
             } else if (mode == Mode.SEARCH_RESULTS) {
                 // Režim pretrage: prikaži "Dodaj" ili "Već ste prijatelji"

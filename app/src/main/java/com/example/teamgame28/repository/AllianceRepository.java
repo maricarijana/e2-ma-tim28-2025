@@ -15,6 +15,7 @@ public class AllianceRepository {
     private static final String TAG = "AllianceRepository";
     private static final String COLLECTION_ALLIANCES = "alliances";
     private static final String COLLECTION_USERS = "users";
+    private static final String COLLECTION_ALLIANCE_MISSIONS = "alliance_missions";
 
     private final FirebaseFirestore db;
 
@@ -74,10 +75,34 @@ public class AllianceRepository {
 
     /**
      * Prihvati poziv → dodaj korisnika u members listu.
+     * Ako korisnik već ima savez (oldAllianceId != null), ukloni ga iz starog saveza.
      */
-    public void acceptInvite(String allianceId, String userId, RepoCallback callback) {
+    public void acceptInvite(String allianceId, String userId, String oldAllianceId, RepoCallback callback) {
         DocumentReference allianceRef = db.collection(COLLECTION_ALLIANCES).document(allianceId);
 
+        // KORAK 0: Ako ima stari savez, prvo ga ukloni iz members liste starog saveza
+        if (oldAllianceId != null && !oldAllianceId.isEmpty()) {
+            DocumentReference oldAllianceRef = db.collection(COLLECTION_ALLIANCES).document(oldAllianceId);
+            oldAllianceRef.update("members", FieldValue.arrayRemove(userId))
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "🚪 " + userId + " napustio stari savez " + oldAllianceId);
+                        // Nastavi sa pridruživanjem novom savezu
+                        joinNewAlliance(allianceRef, userId, allianceId, callback);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "❌ Greška kod napuštanja starog saveza", e);
+                        callback.onFailure(e);
+                    });
+        } else {
+            // Nema starog saveza, direktno se pridruži novom
+            joinNewAlliance(allianceRef, userId, allianceId, callback);
+        }
+    }
+
+    /**
+     * Helper metoda za pridruživanje novom savezu.
+     */
+    private void joinNewAlliance(DocumentReference allianceRef, String userId, String allianceId, RepoCallback callback) {
         // 1. Dodaj u members
         allianceRef.update("members", FieldValue.arrayUnion(userId))
                 .addOnSuccessListener(aVoid -> {
@@ -183,6 +208,32 @@ public class AllianceRepository {
     // Callback interfejs za listu saveza
     public interface AllianceListCallback {
         void onSuccess(java.util.List<Alliance> alliances);
+        void onFailure(Exception e);
+    }
+
+    /**
+     * Proveri da li savez ima aktivnu misiju.
+     */
+    public void hasActiveMission(String allianceId, ActiveMissionCallback callback) {
+        db.collection(COLLECTION_ALLIANCE_MISSIONS)
+                .whereEqualTo("allianceId", allianceId)
+                .whereEqualTo("active", true)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    boolean hasActive = !querySnapshot.isEmpty();
+                    Log.d(TAG, "✅ Provera aktivne misije za savez " + allianceId + ": " + hasActive);
+                    callback.onResult(hasActive);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Greška kod provere aktivne misije", e);
+                    callback.onFailure(e);
+                });
+    }
+
+    // Callback interfejs za proveru aktivne misije
+    public interface ActiveMissionCallback {
+        void onResult(boolean hasActiveMission);
         void onFailure(Exception e);
     }
 }
