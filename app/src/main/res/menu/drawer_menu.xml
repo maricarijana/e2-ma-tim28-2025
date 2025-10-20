@@ -1,0 +1,36 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_tasks"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="Zadaci" />
+        <item
+            android:id="@+id/nav_calendar"
+            android:icon="@android:drawable/ic_menu_today"
+            android:title="Kalendar" />
+        <item
+            android:id="@+id/nav_categories"
+            android:icon="@android:drawable/ic_menu_view"
+            android:title="Kategorije" />
+        <item
+            android:id="@+id/nav_boss_battle"
+            android:icon="@android:drawable/ic_menu_close_clear_cancel"
+            android:title="Boss Battle" />
+        <item
+            android:id="@+id/nav_shop"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="Prodavnica" />
+        <item
+            android:id="@+id/nav_equipment"
+            android:icon="@android:drawable/ic_menu_manage"
+            android:title="Moja Oprema" />
+        <item
+            android:id="@+id/nav_profile"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="Profil" />
+        <item
+            android:id="@+id/nav_logout"
+            android:icon="@android:drawable/ic_lock_power_off"
+            android:title="Odjava" />
+    </group>
+</menu>

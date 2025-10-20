@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- 🔹 Broj dana -->
+        <TextView
+            android:id="@+id/dayText"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:background="@drawable/bg_day_selector"
+            android:text="1" />
+
+        <!-- 🔹 Kontejner za boje kategorija (horizontalni indikatori) -->
+        <LinearLayout
+            android:id="@+id/colorIndicatorsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="6dp"
+            android:orientation="horizontal"
+            android:layout_marginTop="2dp"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+</FrameLayout>
