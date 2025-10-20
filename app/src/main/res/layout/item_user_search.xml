@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <!-- Avatar korisnika -->
+        <ImageView
+            android:id="@+id/user_avatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center_vertical"
+            android:scaleType="centerCrop"
+            android:contentDescription="User Avatar" />
+
+        <!-- Informacije o korisniku -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:orientation="vertical">
+
+            <!-- Username -->
+            <TextView
+                android:id="@+id/user_username"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Username"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black" />
+
+            <!-- UID (opciono - za debug) -->
+            <TextView
+                android:id="@+id/user_uid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="uid"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Dugmad -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:orientation="vertical">
+
+            <!-- Dugme za pregled profila -->
+            <Button
+                android:id="@+id/btn_view_profile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Profil"
+                android:textSize="12sp"
+                android:padding="8dp" />
+
+            <!-- Dugme za dodavanje prijatelja (search mode) -->
+            <Button
+                android:id="@+id/btn_add_friend"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dodaj"
+                android:textSize="12sp"
+                android:padding="8dp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+            <!-- Dugme za dodavanje u savez (friend list mode) -->
+            <Button
+                android:id="@+id/btn_invite_alliance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dodaj u savez"
+                android:textSize="11sp"
+                android:padding="8dp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+            <!-- Tekst "Već ste prijatelji" (search mode ako je već prijatelj) -->
+            <TextView
+                android:id="@+id/text_already_friends"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Već ste prijatelji"
+                android:textSize="11sp"
+                android:textColor="@android:color/darker_gray"
+                android:padding="8dp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

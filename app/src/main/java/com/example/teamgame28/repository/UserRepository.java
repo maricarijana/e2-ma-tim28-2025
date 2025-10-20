@@ -3,8 +3,14 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.example.teamgame28.R;
+import com.example.teamgame28.model.Badge;
+import com.example.teamgame28.model.Clothing;
+import com.example.teamgame28.model.Potion;
+import com.example.teamgame28.model.PotionType;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.model.UserProfile;
+import com.example.teamgame28.service.EquipmentService;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.firebase.auth.AuthResult;
@@ -157,6 +163,12 @@ public class UserRepository {
         void onFailure(Exception e);
     }
 
+    // Callback interface za listu korisnika
+    public interface UserListCallback {
+        void onSuccess(java.util.List<User> users);
+        void onFailure(Exception e);
+    }
+
     // Metoda za dobijanje korisnika po ID-u
     public void getUserById(String userId, UserCallback callback) {
         firestore.collection(USERS_COLLECTION)
@@ -171,6 +183,74 @@ public class UserRepository {
                     }
                 })
                 .addOnFailureListener(callback::onFailure);
+    }
+
+    // Metoda za pretragu korisnika po username-u (case-insensitive, substring match)
+    public void searchUsersByUsername(String query, UserListCallback callback) {
+        if (query == null || query.trim().isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        // Konvertuj query u lowercase za case-insensitive search
+        String lowerQuery = query.toLowerCase().trim();
+
+        // Učitaj sve korisnike i filtriraj na klijentu
+        // (Za veće baze podataka preporučuje se Algolia ili Elasticsearch)
+        firestore.collection(USERS_COLLECTION)
+                .limit(500) // Povećaj limit za bolju pretragu
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    java.util.List<User> users = new java.util.ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        User user = doc.toObject(User.class);
+                        if (user != null && user.getUsername() != null) {
+                            // Case-insensitive substring match
+                            if (user.getUsername().toLowerCase().contains(lowerQuery)) {
+                                users.add(user);
+                            }
+                        }
+                    }
+                    callback.onSuccess(users);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    // Metoda za dohvatanje liste User objekata po userId list-i
+    public void getUsersByIds(java.util.List<String> userIds, UserListCallback callback) {
+        if (userIds == null || userIds.isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        // Firestore 'in' query limit je 10, tako da moramo da delimo ako ima više
+        java.util.List<User> allUsers = new java.util.ArrayList<>();
+        int batchSize = 10;
+        int totalBatches = (int) Math.ceil((double) userIds.size() / batchSize);
+        final int[] completedBatches = {0};
+
+        for (int i = 0; i < userIds.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, userIds.size());
+            java.util.List<String> batch = userIds.subList(i, end);
+
+            firestore.collection(USERS_COLLECTION)
+                    .whereIn("uid", batch)
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                            User user = doc.toObject(User.class);
+                            if (user != null) {
+                                allUsers.add(user);
+                            }
+                        }
+
+                        completedBatches[0]++;
+                        if (completedBatches[0] == totalBatches) {
+                            callback.onSuccess(allUsers);
+                        }
+                    })
+                    .addOnFailureListener(callback::onFailure);
+        }
     }
 
     // Metoda za dobijanje UserProfile-a po ID-u
@@ -437,5 +517,7 @@ public class UserRepository {
                 Log.e(TAG, "❌ Greška pri ažuriranju login streak-a: ", e)
         );
     }
+
+
 
 }

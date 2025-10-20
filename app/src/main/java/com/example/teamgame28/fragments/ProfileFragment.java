@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.teamgame28.R;
+import com.example.teamgame28.model.Badge;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.model.UserProfile;
 import com.example.teamgame28.repository.UserRepository;
@@ -201,7 +202,7 @@ public class ProfileFragment extends Fragment {
             // Bedževi
             if (userProfile.getBadges() != null && !userProfile.getBadges().isEmpty()) {
                 StringBuilder badgesText = new StringBuilder();
-                for (String badge : userProfile.getBadges()) {
+                for (Badge badge : userProfile.getBadges()) {
                     badgesText.append("• ").append(badge).append("\n");
                 }
                 profileBadges.setText(badgesText.toString().trim());

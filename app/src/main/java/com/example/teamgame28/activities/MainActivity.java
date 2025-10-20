@@ -1,4 +1,12 @@
 package com.example.teamgame28.activities;
+// 🔹 Pokretanje periodične provere isteka misija (1x dnevno)
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.ExistingPeriodicWorkPolicy;
+
+import com.example.teamgame28.workers.MissionExpiryWorker;
+
+import java.util.concurrent.TimeUnit;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,12 +23,16 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.teamgame28.R;
+import com.example.teamgame28.fragments.AllianceFragment;
 import com.example.teamgame28.fragments.CategoryManagementFragment;
 import com.example.teamgame28.fragments.EquipmentActivationFragment;
+import com.example.teamgame28.fragments.FriendRequestsFragment;
+import com.example.teamgame28.fragments.FriendsFragment;
 import com.example.teamgame28.fragments.ProfileFragment;
 import com.example.teamgame28.fragments.ShopFragment;
 import com.example.teamgame28.fragments.TaskCalendarFragment;
 import com.example.teamgame28.fragments.TaskListFragment;
+import com.example.teamgame28.listener.InviteRealtimeListener;
 import com.example.teamgame28.model.BattleData;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.repository.BossRepository;
@@ -64,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
         navigationView = findViewById(R.id.navigation_view);
         userRepository = new UserRepository();
         battleService = new BattleService(new BossService(new BossRepository()), this);
+
+        // 🔹 Pokreni listenere NAKON inicijalizacije
+        InviteRealtimeListener.start(getApplicationContext(), currentUser.getUid());
+        startAllianceMessageListener(currentUser.getUid());
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
@@ -109,6 +125,21 @@ public class MainActivity extends AppCompatActivity {
                         .beginTransaction()
                         .replace(R.id.fragment_container, new EquipmentActivationFragment())
                         .commit();
+            } else if (itemId == R.id.nav_friends) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new FriendsFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_alliance) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_alliance1) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new AllianceFragment())
+                        .commit();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()
                         .beginTransaction()
@@ -124,10 +155,24 @@ public class MainActivity extends AppCompatActivity {
 
         // 🔹 Početni fragment
         if (savedInstanceState == null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new TaskListFragment())
-                    .commit();
+            // Proveri da li treba otvoriti AllianceDetailsFragment
+            if (getIntent().getBooleanExtra("open_alliance_details", false)) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                        .commit();
+            } else if (getIntent().getBooleanExtra("open_alliance_chat", false)) {
+                // Otvori AllianceChatFragment
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceChatFragment())
+                        .commit();
+            } else {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new TaskListFragment())
+                        .commit();
+            }
         }
 
         // 🔹 Nova OnBackPressedDispatcher logika (umesto onBackPressed)
@@ -143,6 +188,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        // === 🕒 Automatska provera isteka misija ===
+        PeriodicWorkRequest missionCheckRequest =
+                new PeriodicWorkRequest.Builder(MissionExpiryWorker.class, 1, TimeUnit.DAYS)
+                        .build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "MissionExpiryWork",
+                ExistingPeriodicWorkPolicy.KEEP,
+                missionCheckRequest
+        );
+
     }
 
     // 🔹 Učitavanje korisnika u drawer header
@@ -221,4 +278,101 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
+    // 🔹 Toolbar menu inflate
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    // 🔹 Toolbar menu handler
+    @Override
+    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_notifications) {
+            // Otvori FriendRequestsFragment
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new FriendRequestsFragment())
+                    .addToBackStack(null)
+                    .commit();
+            return true;
+        } else if (itemId == R.id.action_profile) {
+            // Otvori ProfileFragment
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new ProfileFragment())
+                    .addToBackStack(null)
+                    .commit();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+
+        // Proveri da li treba otvoriti AllianceDetailsFragment
+        if (intent.getBooleanExtra("open_alliance_details", false)) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                    .commit();
+        } else if (intent.getBooleanExtra("open_alliance_chat", false)) {
+            // Otvori AllianceChatFragment
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceChatFragment())
+                    .commit();
+        }
+    }
+
+    // 🔹 Pokreni message listener za savez
+    private void startAllianceMessageListener(String userId) {
+        userRepository.getUserProfileById(userId, new UserRepository.UserProfileCallback() {
+            @Override
+            public void onSuccess(com.example.teamgame28.model.UserProfile userProfile) {
+                if (userProfile != null && userProfile.getCurrentAllianceId() != null) {
+                    String allianceId = userProfile.getCurrentAllianceId();
+
+                    // Dohvati ime saveza
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("alliances")
+                            .document(allianceId)
+                            .get()
+                            .addOnSuccessListener(doc -> {
+                                if (doc.exists()) {
+                                    String allianceName = doc.getString("name");
+                                    // Pokreni listener za poruke
+                                    com.example.teamgame28.listener.AllianceMessageRealtimeListener.startForAlliance(
+                                            getApplicationContext(),
+                                            userId,
+                                            allianceId,
+                                            allianceName
+                                    );
+                                }
+                            });
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Korisnik nema profil ili nije u savezu, ništa ne radi
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        // ugasi Firestore listener kad se Activity ruši
+        InviteRealtimeListener.stop();
+        com.example.teamgame28.listener.AllianceMessageRealtimeListener.stopAll();
+        super.onDestroy();
+    }
+
 }
