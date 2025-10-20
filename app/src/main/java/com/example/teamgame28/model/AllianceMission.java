@@ -1,5 +1,7 @@
 package com.example.teamgame28.model;
 
+import com.google.firebase.Timestamp;
+
 import java.io.Serializable;
 
 // ========== ALLIANCE MISSION ==========
@@ -8,12 +10,20 @@ public class AllianceMission implements Serializable {
     private String allianceId;
     private int bossHp;
     private boolean active;
-    private long startTime;
-    private long endTime;
+    private Timestamp startTime;
+    private Timestamp endTime;
+    private Timestamp lastAllianceMessageDate;
+    private int allianceMessageDaysCount;
+
+    public Timestamp getLastAllianceMessageDate() { return lastAllianceMessageDate; }
+    public void setLastAllianceMessageDate(Timestamp lastAllianceMessageDate) { this.lastAllianceMessageDate = lastAllianceMessageDate; }
+
+    public int getAllianceMessageDaysCount() { return allianceMessageDaysCount; }
+    public void setAllianceMessageDaysCount(int allianceMessageDaysCount) { this.allianceMessageDaysCount = allianceMessageDaysCount; }
 
     public AllianceMission() {}
 
-    public AllianceMission(String missionId, String allianceId, int bossHp, boolean active, long startTime, long endTime) {
+    public AllianceMission(String missionId, String allianceId, int bossHp, boolean active, Timestamp startTime, Timestamp endTime) {
         this.missionId = missionId;
         this.allianceId = allianceId;
         this.bossHp = bossHp;
@@ -34,9 +44,9 @@ public class AllianceMission implements Serializable {
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
 
-    public long getStartTime() { return startTime; }
-    public void setStartTime(long startTime) { this.startTime = startTime; }
+    public Timestamp getStartTime() { return startTime; }
+    public void setStartTime(Timestamp startTime) { this.startTime = startTime; }
 
-    public long getEndTime() { return endTime; }
-    public void setEndTime(long endTime) { this.endTime = endTime; }
+    public Timestamp getEndTime() { return endTime; }
+    public void setEndTime(Timestamp endTime) { this.endTime = endTime; }
 }

@@ -3,6 +3,7 @@ package com.example.teamgame28.repository;
 import android.util.Log;
 
 import com.example.teamgame28.model.AllianceMessage;
+import com.example.teamgame28.service.SpecialTaskMissionService;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -36,11 +37,16 @@ public class AllianceMessageRepository {
         messagesRef.document(msgId).set(message)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "✅ Poruka poslata: " + msgId);
-                    callback.onSuccess();
+
+                    // 🔥 DODAJ OVO — automatski registruje poruku za misiju (jednom dnevno po savezu)
+                    SpecialTaskMissionService specialService = new SpecialTaskMissionService();
+                    specialService.recordAllianceMessage(message.getSenderId());
+
+                    if (callback != null) callback.onSuccess();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "❌ Greška kod slanja poruke", e);
-                    callback.onFailure(e);
+                    if (callback != null) callback.onFailure(e);
                 });
     }
 

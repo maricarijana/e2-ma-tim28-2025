@@ -3,6 +3,7 @@ package com.example.teamgame28.repository;
 import android.util.Log;
 
 import com.example.teamgame28.model.Alliance;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
@@ -14,7 +15,7 @@ public class AllianceRepository {
 
     private static final String TAG = "AllianceRepository";
     private static final String COLLECTION_ALLIANCES = "alliances";
-    private static final String COLLECTION_USERS = "users";
+    private static final String COLLECTION_USERS = "app_users";
 
     private final FirebaseFirestore db;
 
@@ -33,7 +34,7 @@ public class AllianceRepository {
                 allianceId,
                 name,
                 leaderId,
-                System.currentTimeMillis()
+                Timestamp.now()
         );
 
         newAllianceRef.set(alliance)
@@ -135,7 +136,10 @@ public class AllianceRepository {
      * Helper: update user profila da zna u kom je savezu.
      */
     private void updateUserAlliance(String userId, String allianceId) {
-        DocumentReference userRef = db.collection(COLLECTION_USERS).document(userId);
+        DocumentReference userRef = db.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection("profile")
+                .document(userId);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentAllianceId", allianceId);
@@ -145,9 +149,67 @@ public class AllianceRepository {
                 .addOnFailureListener(e -> Log.e(TAG, "❌ Greska kod update-a user profila", e));
     }
 
+    /**
+     * Pronađi savez po ID-u korisnika.
+     */
+    public void getAllianceByUserId(String userId, AllianceCallback callback) {
+        Log.d(TAG, "🔍 Tražim savez za userId: " + userId);
+
+        db.collection(COLLECTION_ALLIANCES)
+                .whereArrayContains("members", userId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(query -> {
+                    Log.d(TAG, "📊 Query rezultat - broj dokumenata: " + query.size());
+
+                    if (query.isEmpty()) {
+                        Log.w(TAG, "⚠️ Nema saveza za korisnika: " + userId);
+                        callback.onSuccess(null);
+                    } else {
+                        Alliance alliance = query.getDocuments().get(0).toObject(Alliance.class);
+                        Log.d(TAG, "✅ Savez pronađen: " + (alliance != null ? alliance.getName() : "null"));
+                        callback.onSuccess(alliance);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Greška pri traženju saveza: " + e.getMessage(), e);
+                    callback.onFailure(e);
+                });
+    }
+
+    /**
+     * Dohvati napredak svih članova u misiji.
+     */
+    public void getMissionProgressForAllMembers(String missionId, ProgressListCallback callback) {
+        db.collection("alliance_mission_progress")
+                .whereEqualTo("missionId", missionId)
+                .get()
+                .addOnSuccessListener(query -> {
+                    java.util.List<com.example.teamgame28.model.AllianceMissionProgress> progressList = new java.util.ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : query.getDocuments()) {
+                        com.example.teamgame28.model.AllianceMissionProgress progress = doc.toObject(com.example.teamgame28.model.AllianceMissionProgress.class);
+                        if (progress != null) {
+                            progressList.add(progress);
+                        }
+                    }
+                    callback.onSuccess(progressList);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
     // Callback interfejs za repo metode
     public interface RepoCallback {
         void onSuccess();
+        void onFailure(Exception e);
+    }
+
+    public interface AllianceCallback {
+        void onSuccess(Alliance alliance);
+        void onFailure(Exception e);
+    }
+
+    public interface ProgressListCallback {
+        void onSuccess(java.util.List<com.example.teamgame28.model.AllianceMissionProgress> progressList);
         void onFailure(Exception e);
     }
 }

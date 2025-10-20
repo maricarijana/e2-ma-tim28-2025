@@ -23,6 +23,7 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.teamgame28.R;
+import com.example.teamgame28.fragments.AllianceFragment;
 import com.example.teamgame28.fragments.CategoryManagementFragment;
 import com.example.teamgame28.fragments.EquipmentActivationFragment;
 import com.example.teamgame28.fragments.ProfileFragment;
@@ -116,6 +117,11 @@ public class MainActivity extends AppCompatActivity {
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new EquipmentActivationFragment())
+                        .commit();
+            } else if (itemId == R.id.nav_alliance) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new AllianceFragment())
                         .commit();
             } else if (itemId == R.id.nav_profile) {
                 getSupportFragmentManager()

@@ -1,6 +1,8 @@
 package com.example.teamgame28.service;
 
 import android.util.Log;
+
+import com.example.teamgame28.model.AllianceMission;
 import com.example.teamgame28.model.AllianceMissionProgress;
 import com.example.teamgame28.model.Badge;
 import com.example.teamgame28.model.Clothing;
@@ -9,6 +11,7 @@ import com.example.teamgame28.model.PotionType;
 import com.example.teamgame28.model.Task;
 import com.example.teamgame28.model.TaskStatus;
 import com.example.teamgame28.model.UserProfile;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -61,7 +64,6 @@ public class SpecialTaskMissionService {
                     // 3) nađi AKTIVNU specijalnu misiju tog saveza
                     db.collection("alliance_missions")
                             .whereEqualTo("allianceId", allianceId)
-                            .whereEqualTo("active", true)
                             .limit(1)
                             .get()
                             .addOnSuccessListener(missions -> {
@@ -305,48 +307,48 @@ public class SpecialTaskMissionService {
     }
 
     private void applyMessageDayTxn(String userId, String missionId) {
-        final var progressRef = db.collection("alliance_mission_progress").document(userId + "_" + missionId);
         final var missionRef = db.collection("alliance_missions").document(missionId);
 
         db.runTransaction(transaction -> {
-            var snap = transaction.get(progressRef);
-            AllianceMissionProgress current = snap.exists()
-                    ? snap.toObject(AllianceMissionProgress.class)
-                    : new AllianceMissionProgress();
+            var missionSnap = transaction.get(missionRef);
+            if (!missionSnap.exists()) return 0;
 
-            if (current == null) current = new AllianceMissionProgress();
-            if (current.getMissionId() == null) current.setMissionId(missionId);
-            if (current.getUserId() == null) current.setUserId(userId);
+            AllianceMission mission = missionSnap.toObject(AllianceMission.class);
+            if (mission == null) return 0;
 
-            // ✅ Nova logika — zabrani više poruka u istom danu
-            long now = System.currentTimeMillis();
-            if (isSameDay(current.getLastMessageTimestamp(), now)) {
+            Timestamp now = Timestamp.now();
+            Timestamp lastMsg = mission.getLastAllianceMessageDate();
+
+            // 🔹 Ako je već poslata poruka danas
+            if (isSameDay(lastMsg, now)) {
                 Log.d("SpecialMission", "📅 Poruka već poslata danas — nema dodatnog HP smanjenja.");
                 return 0;
             }
 
-            // ✅ Limit 14 dana
-            if (current.getDaysWithMessages() >= 14) {
-                Log.d("SpecialMission", "⚠️ Limit poruka dostignut (14/14).");
+            // 🔹 Ako je dostignut limit (14 dana)
+            if (mission.getAllianceMessageDaysCount() >= 14) {
+                Log.d("SpecialMission", "⚠️ Dostignut limit poruka (14 dana).");
                 return 0;
             }
 
-            // ✅ Ažuriraj stanje
-            current.setLastMessageTimestamp(now);
-            current.setDaysWithMessages(current.getDaysWithMessages() + 1);
-            current.setDamageDealt(current.getDamageDealt() + 4);
-            transaction.set(progressRef, current);
+            // ✅ Ažuriraj podatke
+            mission.setLastAllianceMessageDate(now);
+            mission.setAllianceMessageDaysCount(mission.getAllianceMessageDaysCount() + 1);
+            transaction.set(missionRef, mission);
 
-            // ✅ Umanji boss HP
-            transaction.update(missionRef, "bossHp",
+            // ✅ Smanji boss HP
+            transaction.update(missionRef,
+                    "bossHp",
                     com.google.firebase.firestore.FieldValue.increment(-4));
 
             return 4;
         }).addOnSuccessListener(dmg -> {
             if (dmg > 0)
-                Log.d("SpecialMission", "💬 Poruka u savezu! Boss HP -" + dmg);
-        }).addOnFailureListener(e -> Log.e("SpecialMission", "❌ Transakcija poruke neuspešna", e));
+                Log.d("SpecialMission", "💬 Poruka u savezu danas! Boss HP -" + dmg);
+        }).addOnFailureListener(e ->
+                Log.e("SpecialMission", "❌ Transakcija poruke neuspešna", e));
     }
+
     /**
      * Centralna metoda za ažuriranje misije i HP-a bossa.
      */
@@ -390,74 +392,136 @@ public class SpecialTaskMissionService {
             }
         }).addOnFailureListener(e -> Log.e("SpecialMission", "❌ Transakcija neuspešna", e));
     }
-    // ===== ⬇️ IZMENA #2 (Logika za proveru isteka misije) ⬇️ =====
     /**
      * Proverava da li je boss poražen i dodeljuje nagrade
      * ili proverava da li je misija istekla bez pobede.
      */
-    private void checkBossDefeat(String missionId) {
+    public void checkBossDefeat(String missionId) {
         db.collection("alliance_missions").document(missionId)
                 .get()
                 .addOnSuccessListener(missionDoc -> {
                     if (!missionDoc.exists()) return;
 
-                    // 🔹 Proveri da li je misija i dalje aktivna
                     Boolean isActive = missionDoc.getBoolean("active");
                     if (isActive == null || !isActive) {
-                        Log.d("SpecialMission", "Misija " + missionId + " je već neaktivna.");
+                        Log.d("SpecialMission", "⚠️ Misija " + missionId + " je već neaktivna, preskačem.");
                         return;
                     }
 
                     Long bossHp = missionDoc.getLong("bossHp");
-                    Long endTime = missionDoc.getLong("endTime");
+                    Timestamp endTime = missionDoc.getTimestamp("endTime");
                     long now = System.currentTimeMillis();
                     String allianceId = missionDoc.getString("allianceId");
+                    if (allianceId == null) return;
 
-                    if (allianceId == null) {
-                        Log.e("SpecialMission", "❌ Misija nema definisan allianceId.");
+                    boolean missionExpired = endTime != null && now > endTime.toDate().getTime();
+                    boolean bossDefeated = bossHp != null && bossHp <= 0;
+
+                    // 🔹 Ako je misija istekla
+                    if (missionExpired) {
+                        Log.d("SpecialMission", "🕒 Misija istekla — proveravam zadatke pre deaktivacije...");
+
+                        String currentUser = FirebaseAuth.getInstance().getUid();
+                        if (currentUser == null) return;
+
+                        // 1️⃣ Prvo proveri zadatke i smanji HP ako treba
+                        checkUnfinishedTasksForUser(currentUser, allianceId, () -> {
+
+                            // ⏳ Sačekaj da se Firestore transakcija završi (da bossHp stvarno padne)
+                            new android.os.Handler(android.os.Looper.getMainLooper())
+                                    .postDelayed(() -> {
+
+                                        // 2️⃣ Ponovo učitaj dokument i tek tada odluči
+                                        db.collection("alliance_missions").document(missionId)
+                                                .get()
+                                                .addOnSuccessListener(updatedDoc -> {
+                                                    if (!updatedDoc.exists()) return;
+                                                    Long updatedHp = updatedDoc.getLong("bossHp");
+                                                    boolean defeatedNow = updatedHp != null && updatedHp <= 0;
+
+                                                    if (defeatedNow) {
+                                                        Log.d("SpecialMission", "🏆 Boss poražen nakon smanjenja HP-a — dodeljujem nagrade...");
+
+                                                        // 💰 Dodeli nagrade svim članovima
+                                                        db.collection("alliances").document(allianceId)
+                                                                .get()
+                                                                .addOnSuccessListener(allianceDoc -> {
+                                                                    if (!allianceDoc.exists()) return;
+                                                                    List<String> members = (List<String>) allianceDoc.get("members");
+                                                                    if (members != null) {
+                                                                        for (String memberId : members) {
+                                                                            grantMissionRewardsToUser(memberId);
+                                                                        }
+                                                                    }
+                                                                });
+                                                    } else {
+                                                        Log.d("SpecialMission", "❌ Boss nije poražen — nema nagrada.");
+                                                    }
+
+                                                    // 3️⃣ Tek sada deaktiviraj misiju
+                                                    updatedDoc.getReference().update("active", false);
+                                                    Log.d("SpecialMission", "✅ Misija deaktivirana TEK nakon provere HP-a.");
+                                                });
+
+                                    }, 5000); // ⏳ kratko kašnjenje od 1.5 sekunde da Firestore završi transakciju
+                        });
                         return;
                     }
 
-                    // 🔸 Ako je misija istekla (bez obzira na HP)
-                    if (endTime != null && now > endTime) {
-                        Log.d("SpecialMission", "🕒 Misija " + missionId + " je istekla. Proveravam nerešene zadatke...");
-                        checkUnfinishedTasksForAlliance(allianceId);
+                    // 🔹 Ako boss padne pre isteka
+                    if (bossDefeated && !missionExpired) {
+                        Log.d("SpecialMission", "🏆 Boss poražen pre isteka roka – čeka se kraj misije za nagrade.");
+                    }
+                });
+    }
 
-                        // Deaktiviraj misiju da se ne ponavlja
-                        missionDoc.getReference().update("active", false);
+    public void triggerMissionCheck(String missionId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("alliance_missions").document(missionId)
+                .get()
+                .addOnSuccessListener(missionDoc -> {
+                    if (!missionDoc.exists()) return;
+
+                    AllianceMission mission = missionDoc.toObject(AllianceMission.class);
+                    if (mission == null) return;
+
+                    long now = System.currentTimeMillis();
+                    long endTime = mission.getEndTime() != null ? mission.getEndTime().toDate().getTime() : 0;
+                    boolean expired = (endTime > 0 && now > endTime);
+                    boolean defeated = mission.getBossHp() <= 0;
+
+                    // 🔹 Ako je misija istekla i još uvek aktivna → proveri zadatke, pa tek onda deaktiviraj
+                    if (expired && mission.isActive()) {
+                        Log.d("SpecialMission", "⏰ Misija istekla, proveravam zadatke pre deaktivacije...");
+
+                        String currentUser = FirebaseAuth.getInstance().getUid();
+                        if (currentUser == null) return;
+
+                        // 🔹 1️⃣ Proveri zadatke i smanji HP ako nema nerešenih
+                        checkUnfinishedTasksForUser(currentUser, mission.getAllianceId(), () -> {
+                            // 🔹 2️⃣ Kada se završi provera zadataka → proveri stanje bossa i deaktiviraj misiju
+                            Log.d("SpecialMission", "✅ Završena provera zadataka – pokrećem checkBossDefeat()");
+                            checkBossDefeat(missionId);
+                        });
+
                         return;
                     }
 
-                    // 🔹 Ako je boss poražen (HP <= 0)
-                    if (bossHp != null && bossHp <= 0) {
-                        Log.d("SpecialMission", "💀 Boss poražen! Dodeljujem nagrade...");
-
-                        // ✅ Prvo proveri da li članovi imaju nerešene zadatke
-                        checkUnfinishedTasksForAlliance(allianceId);
-                        // Deaktiviraj misiju da se ne ponavlja dodela
-                        missionDoc.getReference().update("active", false);
-
-                        db.collection("alliances").document(allianceId)
-                                .get()
-                                .addOnSuccessListener(allianceDoc -> {
-                                    if (!allianceDoc.exists()) return;
-                                    List<String> members = (List<String>) allianceDoc.get("members");
-
-                                    if (members != null) {
-                                        for (String memberId : members) {
-                                            // 🎁 Nagrada: napitak, odeća, 50% coina i bedž
-                                            grantMissionRewardsToUser(memberId);
-                                        }
-                                    }
-                                });
+                    // 🔹 Ako boss padne pre isteka roka → pokreni proveru odmah
+                    if (defeated && mission.isActive()) {
+                        Log.d("SpecialMission", "🏆 Boss poražen pre isteka roka – pokrećem checkBossDefeat()");
+                        checkBossDefeat(missionId);
+                        return;
                     }
+
+                    // 🔹 Ako misija nije istekla niti je boss pao
+                    Log.d("SpecialMission", "⌛ Misija još traje, ništa se ne menja.");
                 })
                 .addOnFailureListener(e ->
-                        Log.e("SpecialMission", "❌ Greška pri proveri stanja misije " + missionId, e));
+                        Log.e("SpecialMission", "❌ Greška pri proveri misije: " + e.getMessage()));
     }
-    public void triggerMissionCheck(String missionId) {
-        checkBossDefeat(missionId);
-    }
+
     // === 🎁 NAGRADA KORISNIKU NAKON POBEDE BOSSA U MISIJI ===
     public static void grantMissionRewardsToUser(String userId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -548,17 +612,18 @@ public class SpecialTaskMissionService {
     /**
      * Proverava da li su dva timestamp-a (u milisekundama) u istom danu.
      */
-    private boolean isSameDay(long t1, long t2) {
-        if (t1 <= 0 || t2 <= 0) return false;
+    private boolean isSameDay(Timestamp t1, Timestamp t2) {
+        if (t1 == null || t2 == null) return false;
 
         java.util.Calendar c1 = java.util.Calendar.getInstance();
         java.util.Calendar c2 = java.util.Calendar.getInstance();
-        c1.setTimeInMillis(t1);
-        c2.setTimeInMillis(t2);
+        c1.setTime(t1.toDate());
+        c2.setTime(t2.toDate());
 
         return c1.get(java.util.Calendar.YEAR) == c2.get(java.util.Calendar.YEAR)
                 && c1.get(java.util.Calendar.DAY_OF_YEAR) == c2.get(java.util.Calendar.DAY_OF_YEAR);
     }
+
 
     /**
      * Proverava da li članovi saveza imaju nerešene zadatke
@@ -597,6 +662,95 @@ public class SpecialTaskMissionService {
                     }
                 });
     }
+
+    public void checkUnfinishedTasksForUser(String userId, String allianceId, Runnable onComplete) {
+        Log.d("SpecialMission", "🔍 Pokrenuta provera nerešenih zadataka za korisnika: " + userId);
+
+        db.collection("tasks")
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    int totalTasks = 0;
+                    int unfinishedTasks = 0;
+
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        Task task = doc.toObject(Task.class);
+                        totalTasks++;
+                        TaskStatus status = task.getStatus();
+
+                        Log.d("SpecialMission", "📋 Task: " + task.getTitle() + " | status=" + status);
+
+                        if (status == TaskStatus.ACTIVE || status == TaskStatus.UNFINISHED) {
+                            unfinishedTasks++;
+                        }
+                    }
+
+                    boolean hasUnfinished = unfinishedTasks > 0;
+
+                    Log.d("SpecialMission", "📊 Ukupno zadataka: " + totalTasks +
+                            ", Nerešenih: " + unfinishedTasks);
+
+                    // ✅ Ako korisnik ima zadatke i svi su završeni → -10 HP
+                    if (!hasUnfinished && totalTasks > 0) {
+                        Log.d("SpecialMission", "🎯 Korisnik nema nerešenih zadataka → primenjujem -10 HP.");
+
+                        db.collection("alliances")
+                                .whereArrayContains("members", userId)
+                                .limit(1)
+                                .get()
+                                .addOnSuccessListener(alliances -> {
+                                    if (alliances.isEmpty()) {
+                                        if (onComplete != null) onComplete.run();
+                                        return;
+                                    }
+
+                                    String allianceIdInner = alliances.getDocuments().get(0).getId();
+
+                                    db.collection("alliance_missions")
+                                            .whereEqualTo("allianceId", allianceIdInner)
+                                            .whereEqualTo("active", true)
+                                            .limit(1)
+                                            .get()
+                                            .addOnSuccessListener(missions -> {
+                                                if (missions.isEmpty()) {
+                                                    if (onComplete != null) onComplete.run();
+                                                    return;
+                                                }
+
+                                                String missionId = missions.getDocuments().get(0).getId();
+
+                                                applyMissionProgress(userId, missionId, current -> {
+                                                    if (!current.isNoUnfinishedTasks()) {
+                                                        current.setNoUnfinishedTasks(true);
+                                                        Log.d("SpecialMission", "💥 Smanjujem boss HP za -10 zbog svih završenih zadataka.");
+                                                        return 10; // -10 HP
+                                                    }
+                                                    return 0;
+                                                });
+
+                                                // ⏳ Sačekaj 1s da Firestore završi transakciju
+                                                new android.os.Handler(android.os.Looper.getMainLooper())
+                                                        .postDelayed(() -> {
+                                                            Log.d("SpecialMission", "✅ Završena provera zadataka (delay 1s)");
+                                                            if (onComplete != null) onComplete.run();
+                                                        }, 1000);
+                                            });
+                                });
+                    } else {
+                        Log.d("SpecialMission", hasUnfinished
+                                ? "⚠️ Korisnik još uvek ima nerešene zadatke — nema bonusa."
+                                : "ℹ️ Korisnik nema nijedan zadatak — bonus se ne primenjuje.");
+
+                        if (onComplete != null) onComplete.run();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("SpecialMission", "❌ Greška pri proveri zadataka: " + e.getMessage(), e);
+                    if (onComplete != null) onComplete.run();
+                });
+    }
+
+
 
 
 }

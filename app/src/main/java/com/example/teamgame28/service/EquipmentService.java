@@ -64,7 +64,7 @@ public class EquipmentService {
      */
     public void buyEquipment(String userId, Equipment equipment, int userCoins,
                             BuyEquipmentCallback callback) {
-
+        Log.d("DEBUG_KUPOVINA", "buyEquipment pozvan! Oprema: " + equipment.getName() + " Vreme: " + System.currentTimeMillis());
         // Validacija: proveri da li korisnik ima dovoljno novčića
         if (userCoins < equipment.getCost()) {
             callback.onFailure("Nemate dovoljno novčića! Potrebno: " +

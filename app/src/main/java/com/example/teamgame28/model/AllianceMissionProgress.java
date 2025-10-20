@@ -1,5 +1,7 @@
 package com.example.teamgame28.model;
 
+import com.google.firebase.Timestamp;
+
 import java.io.Serializable;
 
 public class AllianceMissionProgress implements Serializable {
@@ -11,7 +13,7 @@ public class AllianceMissionProgress implements Serializable {
     private int messagesSent;
     private boolean noUnfinishedTasks;
 
-    private long lastMessageTimestamp;
+    private Timestamp lastMessageTimestamp;
 
     // 🔹 Postojeća nova polja
     private int bossHits; // broj uspešnih udaraca na bossa tokom specijalne misije
@@ -58,11 +60,11 @@ public class AllianceMissionProgress implements Serializable {
     public boolean isNoUnfinishedTasks() { return noUnfinishedTasks; }
     public void setNoUnfinishedTasks(boolean noUnfinishedTasks) { this.noUnfinishedTasks = noUnfinishedTasks; }
 
-    public long getLastMessageTimestamp() {
+    public Timestamp getLastMessageTimestamp() {
         return lastMessageTimestamp;
     }
 
-    public void setLastMessageTimestamp(long lastMessageTimestamp) {
+    public void setLastMessageTimestamp(Timestamp lastMessageTimestamp) {
         this.lastMessageTimestamp = lastMessageTimestamp;
     }
 

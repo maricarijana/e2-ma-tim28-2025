@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.example.teamgame28.model.Alliance;
 import com.example.teamgame28.model.AllianceMission;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -62,10 +63,10 @@ public class AllianceMissionRepository {
 
                                 int bossHp = 100 * memberCount;
 
-                                long startTime = System.currentTimeMillis();
+                                Timestamp startTime = Timestamp.now();
                                 Calendar cal = Calendar.getInstance();
                                 cal.add(Calendar.DAY_OF_MONTH, 14); // traje 2 nedelje
-                                long endTime = cal.getTimeInMillis();
+                                Timestamp endTime = new Timestamp(cal.getTime());
 
                                 // 3️⃣ Kreiraj misiju
                                 DocumentReference missionRef = db.collection(COLLECTION_MISSIONS).document();
@@ -74,7 +75,7 @@ public class AllianceMissionRepository {
                                         allianceId,
                                         bossHp,
                                         true,
-                                        startTime,
+                                        Timestamp.now(),
                                         endTime
                                 );
 
@@ -131,8 +132,33 @@ public class AllianceMissionRepository {
     }
 
 
+    /**
+     * Dohvati aktivnu misiju za savez.
+     */
+    public void getActiveMission(String allianceId, MissionCallback callback) {
+        db.collection(COLLECTION_MISSIONS)
+                .whereEqualTo("allianceId", allianceId)
+                .whereEqualTo("active", true)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (query.isEmpty()) {
+                        callback.onSuccess(null);
+                    } else {
+                        AllianceMission mission = query.getDocuments().get(0).toObject(AllianceMission.class);
+                        callback.onSuccess(mission);
+                    }
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
     public interface RepoCallback {
         void onSuccess();
+        void onFailure(Exception e);
+    }
+
+    public interface MissionCallback {
+        void onSuccess(AllianceMission mission);
         void onFailure(Exception e);
     }
 }

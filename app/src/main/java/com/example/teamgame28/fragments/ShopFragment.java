@@ -23,6 +23,7 @@ import com.example.teamgame28.model.Potion;
 import com.example.teamgame28.model.UserProfile;
 import com.example.teamgame28.repository.UserRepository;
 import com.example.teamgame28.service.EquipmentService;
+import com.example.teamgame28.service.SpecialTaskMissionService;
 import com.example.teamgame28.viewmodels.EquipmentViewModel;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
@@ -40,6 +41,7 @@ public class ShopFragment extends Fragment {
     private EquipmentViewModel viewModel;
     private EquipmentService equipmentService;
     private UserRepository userRepository;
+    private SpecialTaskMissionService specialTaskService;
 
     private TabLayout tabLayout;
     private RecyclerView recyclerView;
@@ -66,6 +68,7 @@ public class ShopFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(EquipmentViewModel.class);
         equipmentService = new EquipmentService();
         userRepository = new UserRepository();
+        specialTaskService = new SpecialTaskMissionService();
 
         // Dobij trenutnog korisnika
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -202,6 +205,10 @@ public class ShopFragment extends Fragment {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
                 viewModel.clearMessages();
+
+                // 🔥 INTEGRACIJA SA SPECIJALNOM MISIJOM
+                // Registruj kupovinu za specijalnu misiju (max 5 puta, -2 HP po kupovini)
+               // specialTaskService.recordShopPurchase(null, userId);
 
                 // Osveži profil nakon kupovine
                 loadUserProfile();
