@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
                         .beginTransaction()
                         .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
                         .commit();
-            } else if (itemId == R.id.nav_alliance) {
+            } else if (itemId == R.id.nav_alliance1) {
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new AllianceFragment())

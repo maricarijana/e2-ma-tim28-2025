@@ -35,7 +35,7 @@ public class AllianceRepository {
                 allianceId,
                 name,
                 leaderId,
-                Timestamp.now()
+                System.currentTimeMillis()
         );
 
         newAllianceRef.set(alliance)

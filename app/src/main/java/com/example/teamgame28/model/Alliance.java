@@ -13,14 +13,14 @@ public class Alliance implements Serializable {
     private List<String> members;        // userId lista
     private List<String> pendingInvites; // userId lista pozvanih
 
-    private Timestamp createdAt;
+    private long createdAt;
 
     public Alliance() {
         this.members = new ArrayList<>();
         this.pendingInvites = new ArrayList<>();
     }
 
-    public Alliance(String id, String name, String leaderId, Timestamp createdAt) {
+    public Alliance(String id, String name, String leaderId, long createdAt) {
         this.id = id;
         this.name = name;
         this.leaderId = leaderId;
@@ -45,6 +45,6 @@ public class Alliance implements Serializable {
     public List<String> getPendingInvites() { return pendingInvites; }
     public void setPendingInvites(List<String> pendingInvites) { this.pendingInvites = pendingInvites; }
 
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 }

@@ -25,7 +25,7 @@
             android:icon="@android:drawable/ic_menu_manage"
             android:title="Moja Oprema" />
         <item
-            android:id="@+id/nav_alliance"
+            android:id="@+id/nav_alliance1"
             android:icon="@android:drawable/ic_menu_share"
             android:title="Savez" />
         <item
