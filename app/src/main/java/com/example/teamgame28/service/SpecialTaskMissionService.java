@@ -18,7 +18,9 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Servis koji povezuje regularne zadatke sa specijalnim misijama saveza.
@@ -526,7 +528,7 @@ public class SpecialTaskMissionService {
     public static void grantMissionRewardsToUser(String userId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         EquipmentService equipmentService = new EquipmentService();
-
+        Random random = new Random();
         // ✅ Tražimo profil korisnika u podkolekciji app_users/{userId}/profile
         db.collection("app_users")
                 .document(userId)
@@ -553,16 +555,86 @@ public class SpecialTaskMissionService {
                     int rewardCoins = nextLevelReward / 2;
                     profile.addCoins(rewardCoins);
 
-                    // 🧪 2️⃣ Napitak
+                    // =============================================
+                    // 🧪 2️⃣ NAPITAK — uvek 1, nasumičan i različit
+                    // =============================================
                     List<Potion> potions = equipmentService.getAvailablePotions();
                     if (!potions.isEmpty()) {
-                        profile.getOwnedPotions().add(potions.get(0));
+                        Potion randomPotion = potions.get(random.nextInt(potions.size()));
+
+                        if (profile.getOwnedPotions() == null) {
+                            profile.setOwnedPotions(new ArrayList<>());
+                        }
+
+                        boolean alreadyOwned = false;
+                        for (Potion p : profile.getOwnedPotions()) {
+                            if (p.getId().equals(randomPotion.getId())) {
+                                alreadyOwned = true;
+                                break;
+                            }
+                        }
+
+// Ako korisnik već ima taj napitak — izaberi drugi
+                        int attempts = 0;
+                        while (alreadyOwned && attempts < potions.size()) {
+                            randomPotion = potions.get(random.nextInt(potions.size()));
+                            alreadyOwned = false;
+                            for (Potion p : profile.getOwnedPotions()) {
+                                if (p.getId().equals(randomPotion.getId())) {
+                                    alreadyOwned = true;
+                                    break;
+                                }
+                            }
+                            attempts++;
+                        }
+
+                        if (!alreadyOwned) {
+                            profile.getOwnedPotions().add(randomPotion);
+                            Log.d("SpecialMission", "🧪 Dobijen napitak: " + randomPotion.getName());
+                        } else {
+                            Log.d("SpecialMission", "⚠️ Nema novih napitaka, svi su već posedovani.");
+                        }
                     }
 
-                    // 👕 3️⃣ Odeća
+                    // =============================================
+                    // 👕 3️⃣ ODEĆA — uvek 1, nasumična i različita
+                    // =============================================
                     List<Clothing> clothes = equipmentService.getAvailableClothes();
                     if (!clothes.isEmpty()) {
-                        profile.getOwnedClothing().add(clothes.get(0));
+                        Clothing randomClothing = clothes.get(random.nextInt(clothes.size()));
+
+                        if (profile.getOwnedClothing() == null) {
+                            profile.setOwnedClothing(new ArrayList<>());
+                        }
+
+                        boolean alreadyOwned = false;
+                        for (Clothing c : profile.getOwnedClothing()) {
+                            if (c.getId().equals(randomClothing.getId())) {
+                                alreadyOwned = true;
+                                break;
+                            }
+                        }
+
+// Ako korisnik već ima taj komad — pokušaj pronaći drugi
+                        int attempts = 0;
+                        while (alreadyOwned && attempts < clothes.size()) {
+                            randomClothing = clothes.get(random.nextInt(clothes.size()));
+                            alreadyOwned = false;
+                            for (Clothing c : profile.getOwnedClothing()) {
+                                if (c.getId().equals(randomClothing.getId())) {
+                                    alreadyOwned = true;
+                                    break;
+                                }
+                            }
+                            attempts++;
+                        }
+
+                        if (!alreadyOwned) {
+                            profile.getOwnedClothing().add(randomClothing);
+                            Log.d("SpecialMission", "🛡️ Dobijena oprema: " + randomClothing.getName());
+                        } else {
+                            Log.d("SpecialMission", "⚠️ Nema novih komada odeće, svi su već posedovani.");
+                        }
                     }
 
                     // 🏅 4️⃣ Bedž
