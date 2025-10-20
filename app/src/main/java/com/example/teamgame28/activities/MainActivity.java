@@ -47,11 +47,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        FirebaseUser cu = FirebaseAuth.getInstance().getCurrentUser();
-        if (cu != null) {
-            InviteRealtimeListener.start(getApplicationContext(), cu.getUid());
-        }
-
 
         // 🔹 Toolbar setup
         Toolbar toolbar = findViewById(R.id.topAppBar);
@@ -72,6 +67,10 @@ public class MainActivity extends AppCompatActivity {
         navigationView = findViewById(R.id.navigation_view);
         userRepository = new UserRepository();
         battleService = new BattleService(new BossService(new BossRepository()), this);
+
+        // 🔹 Pokreni listenere NAKON inicijalizacije
+        InviteRealtimeListener.start(getApplicationContext(), currentUser.getUid());
+        startAllianceMessageListener(currentUser.getUid());
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
@@ -147,6 +146,12 @@ public class MainActivity extends AppCompatActivity {
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
+                        .commit();
+            } else if (getIntent().getBooleanExtra("open_alliance_chat", false)) {
+                // Otvori AllianceChatFragment
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceChatFragment())
                         .commit();
             } else {
                 getSupportFragmentManager()
@@ -292,13 +297,55 @@ public class MainActivity extends AppCompatActivity {
                     .beginTransaction()
                     .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceDetailsFragment())
                     .commit();
+        } else if (intent.getBooleanExtra("open_alliance_chat", false)) {
+            // Otvori AllianceChatFragment
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new com.example.teamgame28.fragments.AllianceChatFragment())
+                    .commit();
         }
+    }
+
+    // 🔹 Pokreni message listener za savez
+    private void startAllianceMessageListener(String userId) {
+        userRepository.getUserProfileById(userId, new UserRepository.UserProfileCallback() {
+            @Override
+            public void onSuccess(com.example.teamgame28.model.UserProfile userProfile) {
+                if (userProfile != null && userProfile.getCurrentAllianceId() != null) {
+                    String allianceId = userProfile.getCurrentAllianceId();
+
+                    // Dohvati ime saveza
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("alliances")
+                            .document(allianceId)
+                            .get()
+                            .addOnSuccessListener(doc -> {
+                                if (doc.exists()) {
+                                    String allianceName = doc.getString("name");
+                                    // Pokreni listener za poruke
+                                    com.example.teamgame28.listener.AllianceMessageRealtimeListener.startForAlliance(
+                                            getApplicationContext(),
+                                            userId,
+                                            allianceId,
+                                            allianceName
+                                    );
+                                }
+                            });
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Korisnik nema profil ili nije u savezu, ništa ne radi
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         // ugasi Firestore listener kad se Activity ruši
         InviteRealtimeListener.stop();
+        com.example.teamgame28.listener.AllianceMessageRealtimeListener.stopAll();
         super.onDestroy();
     }
 

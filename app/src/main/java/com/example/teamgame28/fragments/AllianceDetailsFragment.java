@@ -32,6 +32,7 @@ public class AllianceDetailsFragment extends Fragment {
     private TextView tvCurrentMission;
     private RecyclerView recyclerMembers;
     private TextView tvEmptyMembers;
+    private android.widget.Button btnOpenChat;
 
     private AllianceMembersAdapter membersAdapter;
     private UserRepository userRepository;
@@ -51,6 +52,7 @@ public class AllianceDetailsFragment extends Fragment {
         tvCurrentMission = view.findViewById(R.id.tv_current_mission);
         recyclerMembers = view.findViewById(R.id.recycler_members);
         tvEmptyMembers = view.findViewById(R.id.tv_empty_members);
+        btnOpenChat = view.findViewById(R.id.btn_open_chat);
 
         // Firebase i Repository
         userRepository = new UserRepository();
@@ -62,10 +64,22 @@ public class AllianceDetailsFragment extends Fragment {
         recyclerMembers.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerMembers.setAdapter(membersAdapter);
 
+        // Postavi listener za dugme Chat
+        btnOpenChat.setOnClickListener(v -> openChat());
+
         // Učitaj podatke o savezu
         loadAllianceDetails();
 
         return view;
+    }
+
+    private void openChat() {
+        // Otvori AllianceChatFragment
+        getParentFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, new AllianceChatFragment())
+                .addToBackStack(null)
+                .commit();
     }
 
     private void loadAllianceDetails() {

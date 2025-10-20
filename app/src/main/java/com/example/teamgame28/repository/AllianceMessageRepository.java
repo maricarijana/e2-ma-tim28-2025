@@ -47,8 +47,8 @@ public class AllianceMessageRepository {
     /**
      * Real-time slušanje poruka u savezu (redosled po timestampu).
      */
-    public void listenForMessages(String allianceId, EventListener<QuerySnapshot> listener) {
-        db.collection(COLLECTION_ALLIANCES)
+    public com.google.firebase.firestore.ListenerRegistration listenForMessages(String allianceId, EventListener<QuerySnapshot> listener) {
+        return db.collection(COLLECTION_ALLIANCES)
                 .document(allianceId)
                 .collection(COLLECTION_MESSAGES)
                 .orderBy("timestamp", Query.Direction.ASCENDING)

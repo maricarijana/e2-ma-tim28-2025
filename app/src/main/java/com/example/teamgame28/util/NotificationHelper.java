@@ -94,9 +94,10 @@ public class NotificationHelper {
         // Kanal uvek pre notify
         createNotificationChannel(appCtx);
 
-        // Intent ka ekranu sa detaljima saveza (možeš kasnije dodati)
-        Intent intent = new Intent(appCtx, AllianceInvitesActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        // Intent ka MainActivity koja će otvoriti AllianceDetailsFragment
+        Intent intent = new Intent(appCtx, com.example.teamgame28.activities.MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("open_alliance_details", true);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 appCtx,
@@ -131,4 +132,42 @@ public class NotificationHelper {
             notificationManager.cancel(notificationId);
         }
     }
+
+    // Poruke – obična, dismissable notifikacija (Android 9–11).
+    public static void sendAllianceChatNotification(Context context,
+                                                    String title,
+                                                    String body,
+                                                    int notificationId,
+                                                    String allianceId) {
+        Context appCtx = context.getApplicationContext();
+        createNotificationChannel(appCtx); // koristi isti CHANNEL_ID
+
+        // Intent ka MainActivity koja će otvoriti Chat fragment
+        Intent intent = new Intent(appCtx, com.example.teamgame28.activities.MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("open_alliance_chat", true);
+        intent.putExtra("alliance_id", allianceId);
+
+        PendingIntent pi = PendingIntent.getActivity(
+                appCtx, notificationId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        NotificationCompat.Builder b = new NotificationCompat.Builder(appCtx, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_more)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(pi)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setOnlyAlertOnce(true)
+                .setAutoCancel(true)        // ← dismisable
+                .setOngoing(false);         // ← dismisable
+
+        NotificationManager nm =
+                (NotificationManager) appCtx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.notify(notificationId, b.build());
+    }
+
 }
