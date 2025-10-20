@@ -95,15 +95,44 @@ public class FriendRepository {
     }
 
     /**
-     * Helper – dodaj prijatelja u polje friends[] u UserProfile dokumentu.
+     * Dohvati pending friend requests za korisnika.
+     */
+    public void getPendingFriendRequests(String userId, FriendRequestListCallback callback) {
+        db.collection(COLLECTION_REQUESTS)
+                .whereEqualTo("toUserId", userId)
+                .whereEqualTo("status", "pending")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    java.util.List<FriendRequest> requests = new java.util.ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        FriendRequest request = doc.toObject(FriendRequest.class);
+                        if (request != null) {
+                            requests.add(request);
+                        }
+                    }
+                    Log.d(TAG, "✅ Dohvaćeno " + requests.size() + " pending friend requests");
+                    callback.onSuccess(requests);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Greška kod dohvatanja friend requests", e);
+                    callback.onFailure(e);
+                });
+    }
+
+    /**
+     * Helper – dodaj prijatelja u polje friends[] u UserProfile dokumentu (podkolekcija).
      */
     private void addFriendship(String userId, String friendId) {
-        DocumentReference userRef = db.collection(COLLECTION_USERS).document(userId);
+        // VAŽNO: friends je u profile podkolekciji, ne u glavnom user dokumentu!
+        DocumentReference profileRef = db.collection("app_users")
+                .document(userId)
+                .collection("profile")
+                .document(userId);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("friends", com.google.firebase.firestore.FieldValue.arrayUnion(friendId));
 
-        userRef.update(updates)
+        profileRef.update(updates)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "👥 " + friendId + " dodat u friends listu korisnika " + userId))
                 .addOnFailureListener(e -> Log.e(TAG, "❌ Greska kod dodavanja prijatelja: " + e.getMessage()));
     }
@@ -111,6 +140,12 @@ public class FriendRepository {
     // Callback interfejs za repo metode
     public interface RepoCallback {
         void onSuccess();
+        void onFailure(Exception e);
+    }
+
+    // Callback interfejs za listu friend requests
+    public interface FriendRequestListCallback {
+        void onSuccess(java.util.List<FriendRequest> requests);
         void onFailure(Exception e);
     }
 }
