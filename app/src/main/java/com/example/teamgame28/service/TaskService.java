@@ -38,7 +38,7 @@ public class TaskService {
         if (task.isRecurring()) {
             repository.addRecurringTaskInstances(task);
         } else {
-            repository.addRecurringTaskInstances(task);
+            repository.addTaskWithXpLimit(task);
         }
     }
 
