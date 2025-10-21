@@ -36,7 +36,6 @@ public class SpecialTaskMissionService {
         this.progressService = new AllianceMissionProgressService();
     }
 
-
     // === 1) JAVNI API: pozovi ovo kad kupovina uspe ===
     public void recordShopPurchase(Task maybeTask, String explicitUserIdIfAny) {
         // 1) utvrdi userId (iz Task-a ako ga ima ili iz parametra / FirebaseAuth)
@@ -95,7 +94,6 @@ public class SpecialTaskMissionService {
             return 0; // ✅ VRATI 0 ako je limit dostignut
         });
     }
-
     // === Boss hit (max 10) -2 HP ===
     public void recordBossHit(String userId) {
         if (userId == null || userId.isEmpty()) return;
@@ -180,25 +178,27 @@ public class SpecialTaskMissionService {
 
     private void applyTaskCompletionTxn(String userId, String missionId, Task task) {
         int diff = task.getDifficultyXp();
-        int imp  = task.getImportanceXp();
+        int imp = task.getImportanceXp();
 
-        // Kombinacija "lak" (3 XP) i "normalan" (1 XP) računa se kao 2 puta
+        // ✅ Ako je zadatak "lak + normalan", računa se kao 2 zadatka
         final boolean isLightAndNormal = (diff == 3 && imp == 1);
         final int slotsWanted = isLightAndNormal ? 2 : 1;
 
         applyMissionProgress(userId, missionId, current -> {
-            int used = current.getTaskPoints();
-            int remaining = 10 - used;
+            int used = current.getTaskPoints();          // koliko je već uračunato do sada
+            int remaining = 10 - used;                   // koliko još može da se računa do limita 10
+
+            // ❌ Ako je već ispunjen limit od 10 — ne oduzimaj više HP-a
             if (remaining <= 0) return 0;
 
+            // ✅ Uzimamo onoliko slotova koliko može da stane do limita
             int slotsApplied = Math.min(slotsWanted, remaining);
             current.setTaskPoints(used + slotsApplied);
 
-            // Svaki završen zadatak uvek nanosi 1 HP štete
-            return 1;
+            // ✅ Samo ako je bar 1 slot iskorišćen, oduzimamo -1 HP
+            return (slotsApplied > 0) ? 1 : 0;
         });
     }
-
 
     // === Ostali zadaci (max 6) -4 HP ===
     public void recordOtherTask(Task task) {
@@ -350,11 +350,7 @@ public class SpecialTaskMissionService {
         }).addOnFailureListener(e ->
                 Log.e("SpecialMission", "❌ Transakcija poruke neuspešna", e));
     }
-
-    /**
-     * Centralna metoda za ažuriranje misije i HP-a bossa.
-     */
-    /**
+/*
      * Centralna metoda za ažuriranje misije i HP-a bossa.
      * Logika ažuriranja sada vraća iznos štete koju treba primeniti.
      */
@@ -821,8 +817,6 @@ public class SpecialTaskMissionService {
                     if (onComplete != null) onComplete.run();
                 });
     }
-
-
 
 
 }
