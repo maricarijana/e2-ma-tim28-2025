@@ -71,6 +71,23 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // 🔹 Proveri da li je email verifikovan
+        currentUser.reload().addOnCompleteListener(task -> {
+            if (!currentUser.isEmailVerified()) {
+                // Email nije verifikovan - izloguj korisnika i vrati na login
+                Toast.makeText(this, "Email nije verifikovan. Molimo proverite poštu.", Toast.LENGTH_LONG).show();
+                auth.signOut();
+                startActivity(new Intent(this, AuthActivity.class));
+                finish();
+                return;
+            }
+
+            // Email JE verifikovan - nastavi sa inicijalizacijom
+            initializeApp(currentUser, toolbar, savedInstanceState);
+        });
+    }
+
+    private void initializeApp(FirebaseUser currentUser, Toolbar toolbar, Bundle savedInstanceState) {
         // 🔹 Drawer setup
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);

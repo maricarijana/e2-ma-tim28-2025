@@ -202,7 +202,7 @@ public class BattleService {
         Equipment droppedEquipment = null;
 
         if (result.isEquipmentDropped()) {
-            boolean isWeapon = random.nextInt(100) < 5; // AKO padne oprema: 5% weapon, 95% clothing
+            boolean isWeapon = random.nextInt(100) < 99; // TESTIRANJE: 99% weapon, 1% clothing
             result.setWeapon(isWeapon);
 
             // 🔹 Izaberi KONKRETAN equipment iz static store!

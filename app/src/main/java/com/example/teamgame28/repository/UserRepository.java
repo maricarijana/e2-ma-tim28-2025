@@ -151,6 +151,80 @@ public class UserRepository {
         Log.d(TAG, "User signed out");
     }
 
+    // Metoda za ažuriranje isActivated polja kada korisnik verifikuje email
+    public Task<Void> activateUser(String userId) {
+        return firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .update("isActivated", true)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "User activated: " + userId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to activate user: " + userId, e));
+    }
+
+    // Metoda za brisanje korisnika koji nisu verifikovali email posle 24h
+    public void deleteUnverifiedOldAccounts() {
+        // TESTIRANJE: 30 sekundi (umesto 24h)
+        // Za produkciju: (24 * 60 * 60 * 1000)
+        long twentyFourHoursAgo = System.currentTimeMillis() - (30 * 1000);
+
+        Log.d(TAG, "🔍 deleteUnverifiedOldAccounts() POKRENUT!");
+        Log.d(TAG, "🕒 Tražim naloge starije od: " + new Date(twentyFourHoursAgo));
+        Log.d(TAG, "🕒 Trenutno vreme: " + new Date());
+
+        // PRVO: Proveri SVE naloge u bazi (za debug)
+        firestore.collection(USERS_COLLECTION)
+                .get()
+                .addOnSuccessListener(allDocs -> {
+                    Log.d(TAG, "🗄️ UKUPNO NALOGA U BAZI: " + allDocs.size());
+                    for (DocumentSnapshot doc : allDocs.getDocuments()) {
+                        Log.d(TAG, "  - Email: " + doc.getString("email") +
+                                   ", createdAt: " + doc.getDate("createdAt") +
+                                   ", isActivated: " + doc.get("isActivated"));
+                    }
+                });
+
+        // POJEDNOSTAVLJEN QUERY - učitaj SVE naloge i filtriraj u kodu (ne treba index)
+        firestore.collection(USERS_COLLECTION)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    Log.d(TAG, "✅ Query uspešan! Ukupno naloga: " + querySnapshot.size());
+
+                    int deletedCount = 0;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        String email = doc.getString("email");
+                        Date createdAt = doc.getDate("createdAt");
+                        Boolean isActivated = doc.getBoolean("isActivated");
+
+                        // Filtriraj u kodu: proveri da li je nalog star i nije aktiviran
+                        if (createdAt != null && createdAt.getTime() < twentyFourHoursAgo) {
+                            if (isActivated == null || !isActivated) {
+                                deletedCount++;
+                                Log.d(TAG, "📋 Nalog za brisanje pronađen: " + email);
+                                Log.d(TAG, "   - createdAt: " + createdAt);
+                                Log.d(TAG, "   - isActivated: " + isActivated);
+
+                                // Briši User dokument
+                                doc.getReference().delete()
+                                        .addOnSuccessListener(aVoid -> {
+                                            Log.d(TAG, "🗑️ OBRISAN unverified user: " + email);
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "❌ Failed to delete user: " + email, e);
+                                        });
+                            }
+                        }
+                    }
+
+                    if (deletedCount == 0) {
+                        Log.d(TAG, "ℹ️ Nema starih neaktivnih naloga za brisanje");
+                    } else {
+                        Log.d(TAG, "🎯 Ukupno naloga za brisanje: " + deletedCount);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Query failed!", e);
+                });
+    }
+
     // Callback interface za asinhrone operacije
     public interface UserCallback {
         void onSuccess(User user);

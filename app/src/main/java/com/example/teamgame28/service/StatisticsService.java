@@ -363,4 +363,52 @@ public class StatisticsService {
         void onSuccess(StatisticsDto.LongestStreakResult result);
         void onFailure(Exception e);
     }
+
+    // Vraća broj započetih i završenih specijalnih misija
+    public void getSpecialMissionsStats(String userId, SpecialMissionsCallback callback) {
+        // 1. Prvo nađi savez korisnika
+        firestore.collection("alliances")
+                .whereArrayContains("members", userId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(allianceQuery -> {
+                    if (allianceQuery.isEmpty()) {
+                        // Korisnik nije u savezu
+                        callback.onSuccess(new StatisticsDto.SpecialMissionsStats(0, 0));
+                        return;
+                    }
+
+                    String allianceId = allianceQuery.getDocuments().get(0).getId();
+
+                    // 2. Učitaj sve misije tog saveza
+                    firestore.collection("alliance_missions")
+                            .whereEqualTo("allianceId", allianceId)
+                            .get()
+                            .addOnSuccessListener(missionsQuery -> {
+                                int totalStarted = missionsQuery.size();
+                                int totalCompleted = 0;
+
+                                for (QueryDocumentSnapshot doc : missionsQuery) {
+                                    Long bossHp = doc.getLong("bossHp");
+                                    Boolean active = doc.getBoolean("active");
+
+                                    // Misija je završena ako je bossHp == 0 i active == false
+                                    if (bossHp != null && bossHp == 0 &&
+                                        active != null && !active) {
+                                        totalCompleted++;
+                                    }
+                                }
+
+                                Log.d(TAG, "Specijalne misije - Započeto: " + totalStarted + ", Završeno: " + totalCompleted);
+                                callback.onSuccess(new StatisticsDto.SpecialMissionsStats(totalStarted, totalCompleted));
+                            })
+                            .addOnFailureListener(callback::onFailure);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public interface SpecialMissionsCallback {
+        void onSuccess(StatisticsDto.SpecialMissionsStats stats);
+        void onFailure(Exception e);
+    }
 }

@@ -24,6 +24,7 @@ public class StatisticsViewModel extends AndroidViewModel {
     private final MutableLiveData<List<StatisticsService.AverageDifficultyPoint>> avgDifficultyData = new MutableLiveData<>();
     private final MutableLiveData<StatisticsDto.OverallAvgDifficulty> overallAvgDifficulty = new MutableLiveData<>();
     private final MutableLiveData<StatisticsDto.LongestStreakResult> longestStreak = new MutableLiveData<>();
+    private final MutableLiveData<StatisticsDto.SpecialMissionsStats> specialMissionsStats = new MutableLiveData<>();
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
     private final MutableLiveData<String> error = new MutableLiveData<>();
 
@@ -55,6 +56,10 @@ public class StatisticsViewModel extends AndroidViewModel {
 
     public LiveData<StatisticsDto.LongestStreakResult> getLongestStreak() {
         return longestStreak;
+    }
+
+    public LiveData<StatisticsDto.SpecialMissionsStats> getSpecialMissionsStats() {
+        return specialMissionsStats;
     }
 
     public LiveData<Boolean> getLoading() {
@@ -148,6 +153,19 @@ public class StatisticsViewModel extends AndroidViewModel {
             @Override
             public void onSuccess(StatisticsDto.LongestStreakResult result) {
                 longestStreak.setValue(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.setValue(e.getMessage());
+            }
+        });
+
+        // Specijalne misije
+        statisticsService.getSpecialMissionsStats(userId, new StatisticsService.SpecialMissionsCallback() {
+            @Override
+            public void onSuccess(StatisticsDto.SpecialMissionsStats stats) {
+                specialMissionsStats.setValue(stats);
             }
 
             @Override

@@ -40,6 +40,11 @@ public class LoginFragment extends Fragment {
             String email = emailInput.getText().toString().trim();
             String password = passwordInput.getText().toString().trim();
 
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(getContext(), "Email i lozinka moraju biti uneti.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             userViewModel.loginUser(email, password)
                     .addOnSuccessListener(msg -> {
                         Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
