@@ -55,6 +55,8 @@ public class StatsFragment extends Fragment {
     private TextView statsOverallCategory;
     private TextView statsOverallDescription;
     private TextView statsLongestStreak;
+    private TextView statsMissionsStarted;
+    private TextView statsMissionsCompleted;
     private PieChart tasksDonutChart;
     private BarChart categoryBarChart;
     private LineChart xpLineChart;
@@ -80,6 +82,8 @@ public class StatsFragment extends Fragment {
         statsOverallCategory = view.findViewById(R.id.stats_overall_category);
         statsOverallDescription = view.findViewById(R.id.stats_overall_description);
         statsLongestStreak = view.findViewById(R.id.stats_longest_streak);
+        statsMissionsStarted = view.findViewById(R.id.stats_missions_started);
+        statsMissionsCompleted = view.findViewById(R.id.stats_missions_completed);
         tasksDonutChart = view.findViewById(R.id.tasks_donut_chart);
         categoryBarChart = view.findViewById(R.id.category_bar_chart);
         xpLineChart = view.findViewById(R.id.xp_line_chart);
@@ -169,11 +173,23 @@ public class StatsFragment extends Fragment {
             }
         });
 
+        // Observe specijalne misije
+        statisticsViewModel.getSpecialMissionsStats().observe(getViewLifecycleOwner(), missionsStats -> {
+            if (missionsStats != null) {
+                displaySpecialMissionsStats(missionsStats);
+            }
+        });
+
 
     }
 
     private void displayLongestStreak(StatisticsDto.LongestStreakResult data) {
         statsLongestStreak.setText(String.valueOf(data.getLongestStreak()));
+    }
+
+    private void displaySpecialMissionsStats(StatisticsDto.SpecialMissionsStats stats) {
+        statsMissionsStarted.setText(String.valueOf(stats.getTotalStarted()));
+        statsMissionsCompleted.setText(String.valueOf(stats.getTotalCompleted()));
     }
 
 

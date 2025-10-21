@@ -60,14 +60,25 @@ public class UserService {
 
         userRepository.authLogin(email, password)
                 .addOnSuccessListener(authResult -> {
-                    if (authResult.getUser() != null && authResult.getUser().isEmailVerified()) {
-                        // Ažuriraj login streak nakon uspešnog logovanja
-                        String userId = authResult.getUser().getUid();
-                        userRepository.updateLoginStreak(userId);
+                    if (authResult.getUser() != null) {
+                        // VAŽNO: Refresh user podataka da se vidi najnoviji status verifikacije
+                        authResult.getUser().reload().addOnCompleteListener(reloadTask -> {
+                            if (authResult.getUser().isEmailVerified()) {
+                                String userId = authResult.getUser().getUid();
 
-                        tcs.setResult("Uspešno prijavljivanje!");
+                                // Ažuriraj isActivated na true (kada korisnik prvi put uspešno se prijavi sa verifikovanim emailom)
+                                userRepository.activateUser(userId);
+
+                                // Ažuriraj login streak nakon uspešnog logovanja
+                                userRepository.updateLoginStreak(userId);
+
+                                tcs.setResult("Uspešno prijavljivanje!");
+                            } else {
+                                tcs.setException(new Exception("Email nije verifikovan. Proverite poštu."));
+                            }
+                        });
                     } else {
-                        tcs.setException(new Exception("Email nije verifikovan. Proverite poštu."));
+                        tcs.setException(new Exception("Neuspešna prijava."));
                     }
                 })
                 .addOnFailureListener(e -> tcs.setException(new Exception("Neuspešna prijava: " + e.getMessage())));

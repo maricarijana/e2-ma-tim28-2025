@@ -142,17 +142,53 @@ public class AllianceRepository {
 
     /**
      * Vođa može da ukine ceo savez.
+     * Uklanja currentAllianceId svim članovima i briše savez.
      */
     public void disbandAlliance(String allianceId, RepoCallback callback) {
         DocumentReference allianceRef = db.collection(COLLECTION_ALLIANCES).document(allianceId);
 
-        allianceRef.delete()
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "💥 Savez ukinut: " + allianceId);
-                    callback.onSuccess();
+        // Prvo pročitaj Alliance da dobiješ listu članova
+        allianceRef.get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        callback.onFailure(new Exception("Savez ne postoji"));
+                        return;
+                    }
+
+                    Alliance alliance = documentSnapshot.toObject(Alliance.class);
+                    if (alliance == null) {
+                        callback.onFailure(new Exception("Greška pri čitanju saveza"));
+                        return;
+                    }
+
+                    // Dobij sve članove (uključujući vođu)
+                    java.util.List<String> allMembers = new java.util.ArrayList<>();
+                    if (alliance.getMembers() != null) {
+                        allMembers.addAll(alliance.getMembers());
+                    }
+                    // Dodaj vođu ako nije već u listi members
+                    if (alliance.getLeaderId() != null && !allMembers.contains(alliance.getLeaderId())) {
+                        allMembers.add(alliance.getLeaderId());
+                    }
+
+                    // Ukloni currentAllianceId svim članovima
+                    for (String memberId : allMembers) {
+                        removeUserAlliance(memberId);
+                    }
+
+                    // Na kraju obriši Alliance dokument
+                    allianceRef.delete()
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "💥 Savez ukinut: " + allianceId);
+                                callback.onSuccess();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "❌ Greška kod brisanja saveza", e);
+                                callback.onFailure(e);
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "❌ Greska kod brisanja saveza", e);
+                    Log.e(TAG, "❌ Greška kod čitanja saveza", e);
                     callback.onFailure(e);
                 });
     }
@@ -173,6 +209,23 @@ public class AllianceRepository {
         profileRef.update(updates)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ currentAllianceId postavljen za usera " + userId))
                 .addOnFailureListener(e -> Log.e(TAG, "❌ Greska kod update-a user profila", e));
+    }
+
+    /**
+     * Helper: ukloni currentAllianceId iz user profila.
+     */
+    private void removeUserAlliance(String userId) {
+        DocumentReference profileRef = db.collection("app_users")
+                .document(userId)
+                .collection("profile")
+                .document(userId);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("currentAllianceId", null);
+
+        profileRef.update(updates)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ currentAllianceId uklonjen za usera " + userId))
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Greška kod uklanjanja currentAllianceId", e));
     }
 
     /**

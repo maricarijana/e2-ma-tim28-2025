@@ -51,6 +51,18 @@
             android:textColor="#FFFFFF"
             android:layout_marginBottom="16dp" />
 
+        <!-- Dugme za ukidanje saveza (vidljivo samo vođi) -->
+        <Button
+            android:id="@+id/btn_disband_alliance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💥 Ukini savez"
+            android:textSize="16sp"
+            android:backgroundTint="@android:color/holo_red_dark"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone" />
+
         <!-- Trenutna misija -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

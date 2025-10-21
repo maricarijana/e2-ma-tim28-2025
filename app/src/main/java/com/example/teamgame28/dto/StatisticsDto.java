@@ -74,4 +74,18 @@ public class StatisticsDto {
         public int getLongestStreak() { return longestStreak; }
         public String getStreakDescription() { return streakDescription; }
     }
+
+    // ---- Special Missions Stats ----
+    public static class SpecialMissionsStats {
+        private int totalStarted;
+        private int totalCompleted;
+
+        public SpecialMissionsStats(int totalStarted, int totalCompleted) {
+            this.totalStarted = totalStarted;
+            this.totalCompleted = totalCompleted;
+        }
+
+        public int getTotalStarted() { return totalStarted; }
+        public int getTotalCompleted() { return totalCompleted; }
+    }
 }

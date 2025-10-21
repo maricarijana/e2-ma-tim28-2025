@@ -18,6 +18,7 @@ import com.example.teamgame28.adapters.AllianceMembersAdapter;
 import com.example.teamgame28.model.Alliance;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.repository.UserRepository;
+import com.example.teamgame28.service.AllianceService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -33,12 +34,15 @@ public class AllianceDetailsFragment extends Fragment {
     private RecyclerView recyclerMembers;
     private TextView tvEmptyMembers;
     private android.widget.Button btnOpenChat;
+    private android.widget.Button btnDisbandAlliance;
 
     private AllianceMembersAdapter membersAdapter;
     private UserRepository userRepository;
+    private AllianceService allianceService;
     private FirebaseFirestore db;
     private String currentUserId;
     private String allianceId;
+    private Alliance currentAlliance;
 
     @Nullable
     @Override
@@ -53,9 +57,11 @@ public class AllianceDetailsFragment extends Fragment {
         recyclerMembers = view.findViewById(R.id.recycler_members);
         tvEmptyMembers = view.findViewById(R.id.tv_empty_members);
         btnOpenChat = view.findViewById(R.id.btn_open_chat);
+        btnDisbandAlliance = view.findViewById(R.id.btn_disband_alliance);
 
         // Firebase i Repository
         userRepository = new UserRepository();
+        allianceService = new AllianceService();
         db = FirebaseFirestore.getInstance();
         currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
@@ -66,6 +72,9 @@ public class AllianceDetailsFragment extends Fragment {
 
         // Postavi listener za dugme Chat
         btnOpenChat.setOnClickListener(v -> openChat());
+
+        // Postavi listener za dugme Ukini savez
+        btnDisbandAlliance.setOnClickListener(v -> disbandAlliance());
 
         // Učitaj podatke o savezu
         loadAllianceDetails();
@@ -110,6 +119,7 @@ public class AllianceDetailsFragment extends Fragment {
                     if (documentSnapshot.exists()) {
                         Alliance alliance = documentSnapshot.toObject(Alliance.class);
                         if (alliance != null) {
+                            currentAlliance = alliance;
                             displayAllianceInfo(alliance);
                             loadMembers(alliance);
                             loadActiveMission(allianceId);
@@ -142,6 +152,13 @@ public class AllianceDetailsFragment extends Fragment {
         // Broj članova (leaderId + members lista)
         int totalMembers = 1 + (alliance.getMembers() != null ? alliance.getMembers().size() : 0);
         tvMemberCount.setText("Članovi: " + totalMembers);
+
+        // Prikaži dugme za ukidanje saveza samo ako je trenutni korisnik vođa
+        if (currentUserId != null && currentUserId.equals(alliance.getLeaderId())) {
+            btnDisbandAlliance.setVisibility(View.VISIBLE);
+        } else {
+            btnDisbandAlliance.setVisibility(View.GONE);
+        }
     }
 
     private void loadMembers(Alliance alliance) {
@@ -193,5 +210,56 @@ public class AllianceDetailsFragment extends Fragment {
                 .addOnFailureListener(e -> {
                     tvCurrentMission.setText("Nema aktivne misije");
                 });
+    }
+
+    private void disbandAlliance() {
+        if (currentAlliance == null || allianceId == null) {
+            Toast.makeText(getContext(), "Greška: savez nije učitan", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Prvo proveri da li je misija pokrenuta
+        allianceService.hasActiveMission(allianceId, new AllianceService.ActiveMissionCallback() {
+            @Override
+            public void onResult(boolean hasActiveMission) {
+                if (hasActiveMission) {
+                    // Misija je pokrenuta, ne dozvoli ukidanje
+                    Toast.makeText(getContext(), "Misija pokrenuta! Ne možete ukinuti savez.", Toast.LENGTH_LONG).show();
+                } else {
+                    // Nema aktivne misije, možemo da ukinemo savez
+                    confirmAndDisbandAlliance();
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Toast.makeText(getContext(), "Greška: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void confirmAndDisbandAlliance() {
+        // Potvrdi sa korisnikom
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Ukini savez")
+                .setMessage("Da li ste sigurni da želite da ukinete savez? Svi članovi će biti uklonjeni iz saveza.")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    // Pozovi service da ukine savez
+                    allianceService.disbandAlliance(allianceId, new AllianceService.ServiceCallback() {
+                        @Override
+                        public void onSuccess(String message) {
+                            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                            // Vrati se na glavni ekran ili osvezi
+                            requireActivity().getSupportFragmentManager().popBackStack();
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            Toast.makeText(getContext(), "Greška: " + error, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Ne", null)
+                .show();
     }
 }
