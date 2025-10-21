@@ -14,7 +14,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TaskRepository {
     private static TaskRepository instance;
@@ -157,8 +159,8 @@ public class TaskRepository {
                         Log.d("XP_DEBUG", "✅ XP obračunat (pun) za: " + task.getTitle());
                     } else {
                         task.setXpCounted(false);
-                        task.setTotalXp(task.getImportanceXp());
-                        Log.d("XP_DEBUG", "⚠️ Kvota ispunjena — XP samo za bitnost (" + task.getTotalXp() + ")");
+                        task.setTotalXp(0); // ❗ XP se više ne dodeljuje, kvota je ispunjena
+                        Log.d("XP_DEBUG", "⚠️ Kvota ispunjena — XP neće biti dodeljen");
                     }
 
                     addTask(task);
@@ -176,24 +178,26 @@ public class TaskRepository {
         int diff = task.getDifficultyXp();
         int imp = task.getImportanceXp();
 
-        if (diff == 1 || imp == 1) return 5; // Veoma lak / Normalan
-        if (diff == 3 || imp == 3) return 5; // Lak / Važan
-        if (diff == 7 || imp == 10) return 2; // Težak / Ekstremno važan
-        if (diff == 20) return 1; // Ekstremno težak
-        if (imp == 100) return 1; // Specijalan
-        return 5;
+        if (diff == 1 && imp == 1) return 5;   // Veoma lak + Normalan
+        if (diff == 3 && imp == 3) return 5;   // Lak + Važan
+        if (diff == 7 && imp == 10) return 2;  // Težak + Ekstremno važan
+        if (diff == 20) return 1;              // Ekstremno težak
+        if (imp == 100) return 1;              // Specijalan
+        return 5;                              // Default fallback
     }
 
     private boolean isDaily(Task task) {
-        return task.getDifficultyXp() <= 7 && task.getImportanceXp() <= 10;
+        int diff = task.getDifficultyXp();
+        int imp = task.getImportanceXp();
+        return (diff == 1 && imp == 1) || (diff == 3 && imp == 3) || (diff == 7 && imp == 10);
     }
 
     private boolean isWeekly(Task task) {
-        return task.getDifficultyXp() == 20;
+        return task.getDifficultyXp() == 20; // ekstremno težak
     }
 
     private boolean isMonthly(Task task) {
-        return task.getImportanceXp() == 100;
+        return task.getImportanceXp() == 100; // specijalan
     }
 
 
@@ -380,43 +384,127 @@ public class TaskRepository {
                         Log.e("Firestore", "❌ Greška pri brisanju ponavljajućih zadataka", e));
     }
 
-    // 🔁 Dodaj sve instance ponavljajućeg zadatka
+    // 🔁 Dodaj sve instance ponavljajućeg zadatka (uz provjeru baze)
     public void addRecurringTaskInstances(Task baseTask) {
         if (baseTask.getRecurringDates() == null || baseTask.getRecurringDates().isEmpty()) {
-            addTask(baseTask);
+            addTaskWithXpLimit(baseTask);
             return;
         }
 
-        // Ako nema groupId, generiši novi
         if (baseTask.getRecurringGroupId() == null || baseTask.getRecurringGroupId().isEmpty()) {
             baseTask.setRecurringGroupId(java.util.UUID.randomUUID().toString());
         }
 
-        for (Long timestamp : baseTask.getRecurringDates()) {
-            Task copy = new Task();
-            copy.setUserId(baseTask.getUserId());
-            copy.setTitle(baseTask.getTitle());
-            copy.setDescription(baseTask.getDescription());
-            copy.setCategoryId(baseTask.getCategoryId());
-            copy.setCategoryName(baseTask.getCategoryName());
-            copy.setCategoryColor(baseTask.getCategoryColor());
-            copy.setFrequency(baseTask.getFrequency());
-            copy.setRecurring(true);
-            copy.setRecurringGroupId(baseTask.getRecurringGroupId());
-            copy.setInterval(baseTask.getInterval());
-            copy.setIntervalUnit(baseTask.getIntervalUnit());
-            copy.setStartDate(new Date(timestamp));
-            copy.setEndDate(baseTask.getEndDate());
-            copy.setTime(baseTask.getTime());
-            copy.setStatus(TaskStatus.ACTIVE);
-            copy.setDifficultyXp(baseTask.getDifficultyXp());
-            copy.setImportanceXp(baseTask.getImportanceXp());
-            copy.calculateTotalXp();
-            copy.setCreationTimestamp(System.currentTimeMillis());
+        int diff = baseTask.getDifficultyXp();
+        int imp = baseTask.getImportanceXp();
+        int maxCount = getXpLimit(baseTask);
 
-            // Sačuvaj svaku instancu posebno
-            addTask(copy);
+        // 🔹 Odredi vremenski period (isti kao u addTaskWithXpLimit)
+        Calendar start = Calendar.getInstance();
+        Calendar end = Calendar.getInstance();
+
+        if (isDaily(baseTask)) {
+            start.set(Calendar.HOUR_OF_DAY, 0);
+            start.set(Calendar.MINUTE, 0);
+            start.set(Calendar.SECOND, 0);
+            end = (Calendar) start.clone();
+            end.add(Calendar.DAY_OF_MONTH, 1);
+        } else if (isWeekly(baseTask)) {
+            start.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+            start.set(Calendar.HOUR_OF_DAY, 0);
+            start.set(Calendar.MINUTE, 0);
+            start.set(Calendar.SECOND, 0);
+            end = (Calendar) start.clone();
+            end.add(Calendar.WEEK_OF_YEAR, 1);
+        } else if (isMonthly(baseTask)) {
+            start.set(Calendar.DAY_OF_MONTH, 1);
+            start.set(Calendar.HOUR_OF_DAY, 0);
+            start.set(Calendar.MINUTE, 0);
+            start.set(Calendar.SECOND, 0);
+            end = (Calendar) start.clone();
+            end.add(Calendar.MONTH, 1);
         }
+
+        // 🔍 1️⃣ Prebroj postojeće zadatke u bazi za taj period
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("userId", baseTask.getUserId())
+                .whereEqualTo("difficultyXp", diff)
+                .whereEqualTo("importanceXp", imp)
+                .whereGreaterThanOrEqualTo("creationTimestamp", start.getTimeInMillis())
+                .whereLessThan("creationTimestamp", end.getTimeInMillis())
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    long existingCount = querySnapshot.size();
+                    int remaining = (int) (maxCount - existingCount);
+                    if (remaining < 0) remaining = 0;
+
+                    Log.d("XP_DEBUG", "📦 Već postoji " + existingCount + " zadataka ove vrste. Preostalo: " + remaining);
+
+                    // 🔁 2️⃣ Kreiraj instance i dodijeli XP prema remaining broju
+                    int instanceIndex = 0;
+                    for (Long timestamp : baseTask.getRecurringDates()) {
+                        Task copy = createTaskCopy(baseTask, timestamp);
+                        copy.setCreationTimestamp(System.currentTimeMillis() + instanceIndex);
+                        instanceIndex++;
+
+                        if (remaining > 0) {
+                            copy.setXpCounted(true);
+                            copy.setTotalXp(copy.getDifficultyXp() + copy.getImportanceXp());
+                            remaining--;
+                            Log.d("XP_DEBUG", "✅ XP obračunat za " + copy.getTitle());
+                        } else {
+                            copy.setXpCounted(false);
+                            copy.setTotalXp(0);
+                            Log.d("XP_DEBUG", "⚠️ Kvota ispunjena — XP neće biti dodeljen");
+                        }
+
+                        addTask(copy);
+                        try { Thread.sleep(50); } catch (InterruptedException ignored) {}
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("XP_DEBUG", "❌ Firestore greška: " + e.getMessage()));
     }
+
+    private Task createTaskCopy(Task baseTask, long timestamp) {
+        Task copy = new Task();
+        copy.setUserId(baseTask.getUserId());
+        copy.setTitle(baseTask.getTitle());
+        copy.setDescription(baseTask.getDescription());
+        copy.setCategoryId(baseTask.getCategoryId());
+        copy.setCategoryName(baseTask.getCategoryName());
+        copy.setCategoryColor(baseTask.getCategoryColor());
+        copy.setFrequency(baseTask.getFrequency());
+        copy.setRecurring(true);
+        copy.setRecurringGroupId(baseTask.getRecurringGroupId());
+        copy.setInterval(baseTask.getInterval());
+        copy.setIntervalUnit(baseTask.getIntervalUnit());
+        copy.setStartDate(new Date(timestamp));
+        copy.setEndDate(baseTask.getEndDate());
+        copy.setTime(baseTask.getTime());
+        copy.setStatus(TaskStatus.ACTIVE);
+        copy.setDifficultyXp(baseTask.getDifficultyXp());
+        copy.setImportanceXp(baseTask.getImportanceXp());
+        copy.calculateTotalXp();
+        copy.setCreationTimestamp(System.currentTimeMillis());
+        return copy;
+    }
+
+    private String getPeriodKey(Date date, int diff, int imp) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+
+        if (isDaily(new Task(diff, imp))) {
+            // npr. "2025-10-21"
+            return cal.get(Calendar.YEAR) + "-" + (cal.get(Calendar.MONTH) + 1) + "-" + cal.get(Calendar.DAY_OF_MONTH);
+        } else if (isWeekly(new Task(diff, imp))) {
+            // npr. "2025-W42"
+            return cal.get(Calendar.YEAR) + "-W" + cal.get(Calendar.WEEK_OF_YEAR);
+        } else if (isMonthly(new Task(diff, imp))) {
+            // npr. "2025-M10"
+            return cal.get(Calendar.YEAR) + "-M" + (cal.get(Calendar.MONTH) + 1);
+        }
+        return "default";
+    }
+
 
 }

@@ -154,6 +154,16 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
                 return;
             }
 
+            if (name.length() > 20) {
+                Toast.makeText(requireContext(), "Naziv može imati maksimalno 20 karaktera!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (isCategoryNameTaken(name, existingCategory)) {
+                Toast.makeText(requireContext(), "Kategorija sa ovim nazivom već postoji!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (selectedColor[0] == null) {
                 Toast.makeText(requireContext(), "Izaberite boju!", Toast.LENGTH_SHORT).show();
                 return;
@@ -218,4 +228,17 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
                 .setNegativeButton("Ne", null)
                 .show();
     }
+
+    private boolean isCategoryNameTaken(String name, TaskCategory currentCategory) {
+        for (TaskCategory category : allCategories) {
+            if (currentCategory != null && category.getId().equals(currentCategory.getId())) {
+                continue;
+            }
+            if (category.getName().equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

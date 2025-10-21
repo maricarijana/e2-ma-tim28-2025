@@ -67,6 +67,11 @@ public class Task implements Serializable {
         this.xpCounted= xpCounted;
         this.colorHex= colorHex;
     }
+    public Task(int difficultyXp, int importanceXp) {
+        this.difficultyXp = difficultyXp;
+        this.importanceXp = importanceXp;
+        this.recurringDates = new ArrayList<>();
+    }
 
     public String getColorHex() {
         return colorHex;

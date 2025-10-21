@@ -273,6 +273,17 @@ public class CreateTaskFragment extends Fragment {
             Toast.makeText(requireContext(), "Unesi naziv zadatka!", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (title.length() > 50) {
+            Toast.makeText(requireContext(), "Naziv može imati maksimalno 50 karaktera!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String description = inputDescription.getText().toString().trim();
+        if (description.length() > 200) {
+            Toast.makeText(requireContext(), "Opis može imati maksimalno 200 karaktera!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
 
         if (allCategories.isEmpty()) {
             Toast.makeText(requireContext(), "Prvo kreiraj kategoriju!", Toast.LENGTH_SHORT).show();
@@ -329,6 +340,28 @@ public class CreateTaskFragment extends Fragment {
 
                 int interval = Integer.parseInt(intervalStr);
                 String intervalUnit = spinnerIntervalUnit.getSelectedItem().toString();
+
+                if (interval <= 0) {
+                    Toast.makeText(requireContext(), "Interval mora biti pozitivan broj!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (startDate.after(endDate)) {
+                    Toast.makeText(requireContext(), "Početni datum mora biti prije krajnjeg!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+// 🔹 Validacija da datumi nisu u prošlosti
+                Date today = new Date();
+                if (startDate.before(today)) {
+                    Toast.makeText(requireContext(), "Početni datum ne može biti u prošlosti!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (endDate.before(today)) {
+                    Toast.makeText(requireContext(), "Krajnji datum ne može biti u prošlosti!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
                 task.setStartDate(startDate);
                 task.setEndDate(endDate);
