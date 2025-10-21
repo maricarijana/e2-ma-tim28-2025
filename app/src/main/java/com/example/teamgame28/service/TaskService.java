@@ -47,6 +47,31 @@ public class TaskService {
     public void updateTask(Task task) {
         task.setLastActionTimestamp(System.currentTimeMillis());
         repository.updateTask(task);
+
+        // ===== ⬇️ IZMENA OVDE (Tačka 2) ⬇️ =====
+        // ✅ Ako je zadatak završen — proveri da li je deo specijalne misije
+        if (task.getStatus() == TaskStatus.FINISHED) {
+            SpecialTaskMissionService specialService = new SpecialTaskMissionService();
+
+            int diff = task.getDifficultyXp();
+            int imp = task.getImportanceXp();
+
+            // Definišemo šta su "Ostali zadaci" prema specifikaciji (7.3)
+            // To su: Težak (7 XP), Ekstremno težak (20 XP), Ekstremno važan (10 XP), Specijalan (100 XP)
+            // [cite: 74, 75, 79, 80]
+            boolean isOtherTask = (diff == 7 || diff == 20 || imp == 10 || imp == 100);
+
+            if (isOtherTask) {
+                // Poziv za "Ostale zadatke" (max 6) - 4 HP
+                specialService.recordOtherTask(task);
+            } else {
+                // Poziv za "Veoma lak, lak, normalan ili važan" (max 10) - 1/2 HP
+                // (Ovo 'else' hvata sve što nije 'isOtherTask',
+                // što su po specifikaciji lakši zadaci)
+                specialService.recordTaskCompletion(task);
+            }
+        }
+        // ===== ⬆️ KRAJ IZMENE ⬆️ =====
     }
 
     // 🔹 Obriši task
@@ -72,4 +97,6 @@ public class TaskService {
 
         return successRate;
     }
+
+
 }

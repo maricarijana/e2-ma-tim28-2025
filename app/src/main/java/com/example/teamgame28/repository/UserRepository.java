@@ -3,8 +3,14 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.example.teamgame28.R;
+import com.example.teamgame28.model.Badge;
+import com.example.teamgame28.model.Clothing;
+import com.example.teamgame28.model.Potion;
+import com.example.teamgame28.model.PotionType;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.model.UserProfile;
+import com.example.teamgame28.service.EquipmentService;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.firebase.auth.AuthResult;
@@ -145,6 +151,80 @@ public class UserRepository {
         Log.d(TAG, "User signed out");
     }
 
+    // Metoda za ažuriranje isActivated polja kada korisnik verifikuje email
+    public Task<Void> activateUser(String userId) {
+        return firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .update("isActivated", true)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "User activated: " + userId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to activate user: " + userId, e));
+    }
+
+    // Metoda za brisanje korisnika koji nisu verifikovali email posle 24h
+    public void deleteUnverifiedOldAccounts() {
+        // TESTIRANJE: 30 sekundi (umesto 24h)
+        // Za produkciju: (24 * 60 * 60 * 1000)
+        long twentyFourHoursAgo = System.currentTimeMillis() - (30 * 1000);
+
+        Log.d(TAG, "🔍 deleteUnverifiedOldAccounts() POKRENUT!");
+        Log.d(TAG, "🕒 Tražim naloge starije od: " + new Date(twentyFourHoursAgo));
+        Log.d(TAG, "🕒 Trenutno vreme: " + new Date());
+
+        // PRVO: Proveri SVE naloge u bazi (za debug)
+        firestore.collection(USERS_COLLECTION)
+                .get()
+                .addOnSuccessListener(allDocs -> {
+                    Log.d(TAG, "🗄️ UKUPNO NALOGA U BAZI: " + allDocs.size());
+                    for (DocumentSnapshot doc : allDocs.getDocuments()) {
+                        Log.d(TAG, "  - Email: " + doc.getString("email") +
+                                   ", createdAt: " + doc.getDate("createdAt") +
+                                   ", isActivated: " + doc.get("isActivated"));
+                    }
+                });
+
+        // POJEDNOSTAVLJEN QUERY - učitaj SVE naloge i filtriraj u kodu (ne treba index)
+        firestore.collection(USERS_COLLECTION)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    Log.d(TAG, "✅ Query uspešan! Ukupno naloga: " + querySnapshot.size());
+
+                    int deletedCount = 0;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        String email = doc.getString("email");
+                        Date createdAt = doc.getDate("createdAt");
+                        Boolean isActivated = doc.getBoolean("isActivated");
+
+                        // Filtriraj u kodu: proveri da li je nalog star i nije aktiviran
+                        if (createdAt != null && createdAt.getTime() < twentyFourHoursAgo) {
+                            if (isActivated == null || !isActivated) {
+                                deletedCount++;
+                                Log.d(TAG, "📋 Nalog za brisanje pronađen: " + email);
+                                Log.d(TAG, "   - createdAt: " + createdAt);
+                                Log.d(TAG, "   - isActivated: " + isActivated);
+
+                                // Briši User dokument
+                                doc.getReference().delete()
+                                        .addOnSuccessListener(aVoid -> {
+                                            Log.d(TAG, "🗑️ OBRISAN unverified user: " + email);
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "❌ Failed to delete user: " + email, e);
+                                        });
+                            }
+                        }
+                    }
+
+                    if (deletedCount == 0) {
+                        Log.d(TAG, "ℹ️ Nema starih neaktivnih naloga za brisanje");
+                    } else {
+                        Log.d(TAG, "🎯 Ukupno naloga za brisanje: " + deletedCount);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Query failed!", e);
+                });
+    }
+
     // Callback interface za asinhrone operacije
     public interface UserCallback {
         void onSuccess(User user);
@@ -154,6 +234,12 @@ public class UserRepository {
     // Callback interface za UserProfile
     public interface UserProfileCallback {
         void onSuccess(UserProfile userProfile);
+        void onFailure(Exception e);
+    }
+
+    // Callback interface za listu korisnika
+    public interface UserListCallback {
+        void onSuccess(java.util.List<User> users);
         void onFailure(Exception e);
     }
 
@@ -171,6 +257,74 @@ public class UserRepository {
                     }
                 })
                 .addOnFailureListener(callback::onFailure);
+    }
+
+    // Metoda za pretragu korisnika po username-u (case-insensitive, substring match)
+    public void searchUsersByUsername(String query, UserListCallback callback) {
+        if (query == null || query.trim().isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        // Konvertuj query u lowercase za case-insensitive search
+        String lowerQuery = query.toLowerCase().trim();
+
+        // Učitaj sve korisnike i filtriraj na klijentu
+        // (Za veće baze podataka preporučuje se Algolia ili Elasticsearch)
+        firestore.collection(USERS_COLLECTION)
+                .limit(500) // Povećaj limit za bolju pretragu
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    java.util.List<User> users = new java.util.ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        User user = doc.toObject(User.class);
+                        if (user != null && user.getUsername() != null) {
+                            // Case-insensitive substring match
+                            if (user.getUsername().toLowerCase().contains(lowerQuery)) {
+                                users.add(user);
+                            }
+                        }
+                    }
+                    callback.onSuccess(users);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    // Metoda za dohvatanje liste User objekata po userId list-i
+    public void getUsersByIds(java.util.List<String> userIds, UserListCallback callback) {
+        if (userIds == null || userIds.isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        // Firestore 'in' query limit je 10, tako da moramo da delimo ako ima više
+        java.util.List<User> allUsers = new java.util.ArrayList<>();
+        int batchSize = 10;
+        int totalBatches = (int) Math.ceil((double) userIds.size() / batchSize);
+        final int[] completedBatches = {0};
+
+        for (int i = 0; i < userIds.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, userIds.size());
+            java.util.List<String> batch = userIds.subList(i, end);
+
+            firestore.collection(USERS_COLLECTION)
+                    .whereIn("uid", batch)
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                            User user = doc.toObject(User.class);
+                            if (user != null) {
+                                allUsers.add(user);
+                            }
+                        }
+
+                        completedBatches[0]++;
+                        if (completedBatches[0] == totalBatches) {
+                            callback.onSuccess(allUsers);
+                        }
+                    })
+                    .addOnFailureListener(callback::onFailure);
+        }
     }
 
     // Metoda za dobijanje UserProfile-a po ID-u
@@ -437,5 +591,7 @@ public class UserRepository {
                 Log.e(TAG, "❌ Greška pri ažuriranju login streak-a: ", e)
         );
     }
+
+
 
 }

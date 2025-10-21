@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.teamgame28.R;
+import com.example.teamgame28.model.Badge;
 import com.example.teamgame28.model.User;
 import com.example.teamgame28.model.UserProfile;
 import com.example.teamgame28.repository.UserRepository;
@@ -36,7 +37,7 @@ public class ProfileFragment extends Fragment {
     private TextView profileXp;
     private TextView profilePowerPoints;
     private TextView profileCoins;
-    private TextView profileBadges;
+
     private TextView profileEquipment;
     private ImageView profileQrCode;
     private Button btnChangePassword;
@@ -62,7 +63,6 @@ public class ProfileFragment extends Fragment {
         profileXp = view.findViewById(R.id.profile_xp);
         profilePowerPoints = view.findViewById(R.id.profile_power_points);
         profileCoins = view.findViewById(R.id.profile_coins);
-        profileBadges = view.findViewById(R.id.profile_badges);
         profileEquipment = view.findViewById(R.id.profile_equipment);
         profileQrCode = view.findViewById(R.id.profile_qr_code);
         btnChangePassword = view.findViewById(R.id.btn_change_password);
@@ -199,15 +199,40 @@ public class ProfileFragment extends Fragment {
             profileCoins.setText(String.valueOf(userProfile.getCoins()));
 
             // Bedževi
+            LinearLayout badgesContainer = requireView().findViewById(R.id.badges_container);
+            TextView noBadgesText = requireView().findViewById(R.id.profile_badges_placeholder);
+            badgesContainer.removeAllViews();
+
             if (userProfile.getBadges() != null && !userProfile.getBadges().isEmpty()) {
-                StringBuilder badgesText = new StringBuilder();
-                for (String badge : userProfile.getBadges()) {
-                    badgesText.append("• ").append(badge).append("\n");
+                noBadgesText.setVisibility(View.GONE);
+
+                for (Badge badge : userProfile.getBadges()) {
+                    // svaki bedž ima istu sliku (npr. ic_badge_special)
+                    LinearLayout badgeLayout = new LinearLayout(requireContext());
+                    badgeLayout.setOrientation(LinearLayout.VERTICAL);
+                    badgeLayout.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+                    badgeLayout.setPadding(16, 0, 16, 0);
+
+                    ImageView badgeImage = new ImageView(requireContext());
+                    badgeImage.setImageResource(R.drawable.ic_badge_special);
+                    LinearLayout.LayoutParams imageParams = new LinearLayout.LayoutParams(100, 100);
+                    badgeImage.setLayoutParams(imageParams);
+
+                    TextView badgeName = new TextView(requireContext());
+                    badgeName.setText(badge.getName());
+                    badgeName.setTextSize(12);
+                    badgeName.setTextColor(getResources().getColor(R.color.black));
+                    badgeName.setGravity(android.view.Gravity.CENTER);
+
+                    badgeLayout.addView(badgeImage);
+                    badgeLayout.addView(badgeName);
+                    badgesContainer.addView(badgeLayout);
                 }
-                profileBadges.setText(badgesText.toString().trim());
+
             } else {
-                profileBadges.setText("Nema bedževa");
+                noBadgesText.setVisibility(View.VISIBLE);
             }
+
 
             // Oprema (posedovana)
             if (userProfile.getOwnedEquipment() != null && !userProfile.getOwnedEquipment().isEmpty()) {

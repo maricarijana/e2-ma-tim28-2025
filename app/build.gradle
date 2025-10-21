@@ -43,6 +43,9 @@ dependencies {
     implementation "com.kizitonwose.calendar:view:2.8.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.2"
+// WorkManager (za automatske zadatke u pozadini)
+    implementation "androidx.work:work-runtime:2.9.0"
+    implementation 'com.google.guava:guava:31.1-android'
 
     implementation(libs.room.runtime)
     annotationProcessor(libs.room.compiler)
